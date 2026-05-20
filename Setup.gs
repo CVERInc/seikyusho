@@ -163,6 +163,7 @@ function setupSettingsSheet_(ss) {
     ['company_name_ja-JP', 'YOUR_COMPANY_NAME_JA_JP', '請求書宛先（日本語）'],
     ['company_name_en-US', 'YOUR_COMPANY_NAME_EN_US', 'Recipient name (English)'],
     ['company_name_zh-TW', 'YOUR_COMPANY_NAME_ZH_TW', '請求書宛先（台湾華語・繁体字表記）'],
+    ['company_name_es-ES', 'YOUR_COMPANY_NAME_ES_ES', 'Nombre del destinatario (Español)'],
     ['company_address', 'YOUR_COMPANY_ADDRESS', '本店所在地'],
     ['corporate_number', '', '法人番号'],
     ['representative', 'YOUR_REPRESENTATIVE_NAME', '代表者'],
@@ -535,6 +536,7 @@ function addMissingSettings() {
 
   const allDefaults = [
     ['form_url', '', '【任意】申請者に渡すフォームの公開URL（デプロイ後の /exec 形式。空欄なら自動取得するが /dev 版になる場合あり）'],
+    ['company_name_es-ES', '', 'Nombre del destinatario (Español)'],
     ['qualified_invoice_number', '', '適格請求書発行事業者登録番号 (例: T1234567890123、未登録なら空欄)'],
     ['show_corporate_number', 'no', 'PDF に法人番号を表示する (yes/no、インボイス未登録時は no 推奨)'],
     ['email_subject_approved', '請求書 {{INVOICE_NO}} が承認されました', '【承認時】申請者宛メール件名'],
