@@ -1,0 +1,29 @@
+# clasp
+.clasp.json
+.clasprc.json
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local config / secrets
+.env
+.env.local
+*.local
+
+# Claude / drafts / memos
+.claude/
+MEMO.md
+DRAFT.md
+NOTES.md
