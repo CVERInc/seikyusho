@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Apps Script](https://img.shields.io/badge/Built%20with-Google%20Apps%20Script-4285F4)](https://script.google.com/)
-[![i18n](https://img.shields.io/badge/i18n-ja--JP%20%2F%20en--US%20%2F%20zh--TW-success)](#)
+[![i18n](https://img.shields.io/badge/i18n-ja--JP%20%2F%20en--US%20%2F%20zh--TW%20%2F%20es--ES-success)](#)
 
 [**🇯🇵 日本語**](#-日本語) ・ [**🇬🇧 English**](#-english)
 
@@ -26,7 +26,7 @@ Google Workspace の標準機能だけで完結し、外部サービス・サー
 
 ### ✨ 主な機能
 
-- 🌐 **多言語対応フォーム**（日本語 / English / 繁體中文・URL パラメータで切替可）
+- 🌐 **多言語対応フォーム**（日本語 / English / 繁體中文 / Español・URL パラメータで切替可）
 - 📄 **3 種類の PDF テンプレート自動切替**（海外居住者 / 国内・源泉なし / 国内・源泉あり）
 - 🔢 **月別連番採番**（例: `202605-001`）
 - 💴 **多通貨対応**（JPY / TWD / USD、必要なら拡張可能）
@@ -159,6 +159,7 @@ clasp push -f
 | `company_name_ja-JP` | ✅ | 請求書宛先（日本語表記）|
 | `company_name_en-US` | | 請求書宛先（英語表記）|
 | `company_name_zh-TW` | | 請求書宛先（台湾華語・繁体字表記）|
+| `company_name_es-ES` | | 請求書宛先（スペイン語表記）|
 | `company_address` | ✅ | 本店所在地 |
 | `corporate_number` | | 法人番号（13桁、表示する場合のみ）|
 | `representative` | | 代表者名 |
@@ -256,7 +257,7 @@ Issue や Pull Request 歓迎します。
 
 A fully automated invoice issuance system for accepting requests from contractors, freelancers, or any external party.
 
-- **Applicants** simply fill out a multilingual form (Japanese / English / Traditional Chinese)
+- **Applicants** simply fill out a multilingual form (Japanese / English / Traditional Chinese / Spanish)
 - **Administrators** receive an email, then click "Approve" or "Reject" on the sheet
 - **PDF generation, numbering, tax calculation, email notifications, and Drive archiving** are all automatic
 
@@ -264,7 +265,7 @@ Built entirely on Google Workspace — no external services, servers, or databas
 
 ### ✨ Features
 
-- 🌐 **Multilingual form** (Japanese / English / Traditional Chinese, switchable via URL param)
+- 🌐 **Multilingual form** (Japanese / English / Traditional Chinese / Spanish, switchable via URL param)
 - 📄 **3 PDF templates auto-selected** (overseas resident / Japan w/o withholding / Japan with withholding)
 - 🔢 **Monthly sequential invoice numbering** (e.g., `202605-001`)
 - 💴 **Multi-currency** (JPY / TWD / USD, extensible)
@@ -393,6 +394,7 @@ Edit these in the **設定 (Settings)** sheet:
 | `company_name_ja-JP` | ✅ | Recipient name (Japanese) |
 | `company_name_en-US` | | Recipient name (English) |
 | `company_name_zh-TW` | | Recipient name (Traditional Chinese / Taiwan) |
+| `company_name_es-ES` | | Recipient name (Spanish) |
 | `company_address` | ✅ | Registered address |
 | `corporate_number` | | Corporate number (13 digits, only if shown) |
 | `representative` | | Representative name |

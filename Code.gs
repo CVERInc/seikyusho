@@ -18,7 +18,8 @@ function doGet(e) {
   const companyNames = {
     'ja-JP': settings['company_name_ja-JP'] || '',
     'en-US': settings['company_name_en-US'] || '',
-    'zh-TW': settings['company_name_zh-TW'] || ''
+    'zh-TW': settings['company_name_zh-TW'] || '',
+    'es-ES': settings['company_name_es-ES'] || ''
   };
   const supportedLangs = Object.keys(companyNames);
   // BCP 47 locale を解決する: exact match → prefix match → デフォルト ja-JP
@@ -120,7 +121,7 @@ function validatePayload_(p) {
   if (items.length === 0) throw new Error('No valid items');
 
   return {
-    language: ['ja-JP', 'en-US', 'zh-TW'].indexOf(p.language) >= 0 ? p.language : 'ja-JP',
+    language: ['ja-JP', 'en-US', 'zh-TW', 'es-ES'].indexOf(p.language) >= 0 ? p.language : 'ja-JP',
     residence: p.residence,
     name: String(p.name).slice(0, 100),
     address: String(p.address).slice(0, 300),

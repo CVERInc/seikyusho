@@ -12,7 +12,8 @@
     const COMPANY_NAMES = {
       'ja-JP': <?!= JSON.stringify(companyNames['ja-JP'] || '') ?>,
       'en-US': <?!= JSON.stringify(companyNames['en-US'] || '') ?>,
-      'zh-TW': <?!= JSON.stringify(companyNames['zh-TW'] || '') ?>
+      'zh-TW': <?!= JSON.stringify(companyNames['zh-TW'] || '') ?>,
+      'es-ES': <?!= JSON.stringify(companyNames['es-ES'] || '') ?>
     };
     Object.keys(TRANSLATIONS).forEach(function(langKey) {
       var name = COMPANY_NAMES[langKey] || '';
@@ -32,6 +33,7 @@
           <option value="ja-JP">日本語</option>
           <option value="en-US">English</option>
           <option value="zh-TW">繁體中文</option>
+          <option value="es-ES">Español</option>
         </select>
       </div>
     </header>
