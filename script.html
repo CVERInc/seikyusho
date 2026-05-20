@@ -1,0 +1,211 @@
+<script>
+(function() {
+  const form = document.getElementById('invoice-form');
+  const langSelect = document.getElementById('lang-select');
+  const itemsContainer = document.getElementById('items-container');
+  const btnAddItem = document.getElementById('btn-add-item');
+  const btnSubmit = document.getElementById('btn-submit');
+  const btnNew = document.getElementById('btn-new');
+  const errorBox = document.getElementById('error-box');
+  const successScreen = document.getElementById('success-screen');
+  const residenceHint = document.getElementById('residence-hint');
+  const currencySelect = document.getElementById('currency-select');
+  const consumptionTaxRow = document.querySelector('.consumption-tax-row');
+
+  // BCP 47 locale を解決する: exact match → prefix match → デフォルト ja-JP
+  function resolveLang(requested) {
+    if (!requested) return null;
+    if (TRANSLATIONS[requested]) return requested;
+    const prefix = String(requested).split('-')[0];
+    const matched = Object.keys(TRANSLATIONS).find(k => k === prefix || k.indexOf(prefix + '-') === 0);
+    return matched || null;
+  }
+  let currentLang = resolveLang(window.INITIAL_LANG) || resolveLang(navigator.language) || 'ja-JP';
+
+  /* ── i18n ── */
+  function applyTranslations() {
+    const t = TRANSLATIONS[currentLang];
+    document.documentElement.lang = currentLang;
+    document.title = t.page_title;
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (t[key]) el.setAttribute('placeholder', t[key]);
+    });
+    updateResidenceHint();
+    document.querySelectorAll('.item-remove').forEach(b => b.setAttribute('title', t.item_remove));
+  }
+
+  langSelect.value = currentLang;
+  langSelect.addEventListener('change', e => {
+    currentLang = e.target.value;
+    applyTranslations();
+  });
+
+  /* ── 居住地 ── */
+  function updateResidenceHint() {
+    const checked = form.querySelector('input[name="residence"]:checked');
+    const t = TRANSLATIONS[currentLang];
+    if (!checked) {
+      residenceHint.textContent = '';
+      consumptionTaxRow.style.display = 'none';
+    } else if (checked.value === 'japan') {
+      residenceHint.textContent = t.residence_note_japan;
+      consumptionTaxRow.style.display = 'flex';
+    } else {
+      residenceHint.textContent = t.residence_note_overseas;
+      consumptionTaxRow.style.display = 'none';
+    }
+    recalculateTotal();
+  }
+  form.querySelectorAll('input[name="residence"]').forEach(r => {
+    r.addEventListener('change', updateResidenceHint);
+  });
+
+  /* ── 通貨フォーマット ── */
+  function formatCurrency(amount) {
+    const n = Math.round(Number(amount) || 0);
+    const formatted = n.toLocaleString('en-US');
+    const cur = currencySelect.value;
+    if (cur === 'JPY') return '¥' + formatted;
+    if (cur === 'TWD') return 'NT$ ' + formatted;
+    if (cur === 'USD') return '$ ' + formatted;
+    return formatted;
+  }
+
+  /* ── 明細管理 ── */
+  function createItemRow() {
+    const t = TRANSLATIONS[currentLang];
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `
+      <input type="text" name="itemName" placeholder="${t.placeholder_item_name}" required>
+      <input type="number" name="itemQty" min="1" step="1" value="1" required>
+      <input type="number" name="itemPrice" min="0" step="1" value="0" required>
+      <div class="item-subtotal">0</div>
+      <button type="button" class="item-remove" title="${t.item_remove}">×</button>
+    `;
+    const inputs = row.querySelectorAll('input');
+    inputs.forEach(inp => inp.addEventListener('input', recalculateTotal));
+    row.querySelector('.item-remove').addEventListener('click', () => {
+      if (itemsContainer.children.length > 1) {
+        row.remove();
+        recalculateTotal();
+      }
+    });
+    return row;
+  }
+
+  function recalculateTotal() {
+    let subtotal = 0;
+    itemsContainer.querySelectorAll('.item-row').forEach(row => {
+      const qty = Number(row.querySelector('[name="itemQty"]').value) || 0;
+      const price = Number(row.querySelector('[name="itemPrice"]').value) || 0;
+      const sub = qty * price;
+      row.querySelector('.item-subtotal').textContent = formatCurrency(sub);
+      subtotal += sub;
+    });
+    document.getElementById('summary-subtotal').textContent = formatCurrency(subtotal);
+
+    const isJapan = (form.querySelector('input[name="residence"]:checked') || {}).value === 'japan';
+    const tax = isJapan ? Math.floor(subtotal * 0.10) : 0;
+    document.getElementById('summary-tax').textContent = formatCurrency(tax);
+    document.getElementById('summary-total').textContent = formatCurrency(subtotal + tax);
+  }
+
+  btnAddItem.addEventListener('click', () => {
+    itemsContainer.appendChild(createItemRow());
+  });
+  currencySelect.addEventListener('change', recalculateTotal);
+
+  /* ── 初期化 ── */
+  itemsContainer.appendChild(createItemRow());
+  applyTranslations();
+
+  /* ── 送信 ── */
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    errorBox.style.display = 'none';
+
+    const t = TRANSLATIONS[currentLang];
+    const fd = new FormData(form);
+
+    const items = [];
+    itemsContainer.querySelectorAll('.item-row').forEach(row => {
+      const name = row.querySelector('[name="itemName"]').value.trim();
+      const qty = Number(row.querySelector('[name="itemQty"]').value);
+      const price = Number(row.querySelector('[name="itemPrice"]').value);
+      if (name && qty > 0) items.push({ name: name, quantity: qty, unitPrice: price });
+    });
+    if (items.length === 0) {
+      showError(t.error_items_empty);
+      return;
+    }
+
+    const payload = {
+      language: currentLang,
+      residence: fd.get('residence'),
+      name: fd.get('name').trim(),
+      address: fd.get('address').trim(),
+      phone: fd.get('phone').trim(),
+      email: fd.get('email').trim(),
+      bankName: fd.get('bankName').trim(),
+      branchName: fd.get('branchName').trim(),
+      accountName: fd.get('accountName').trim(),
+      accountNumber: fd.get('accountNumber').trim(),
+      currency: fd.get('currency'),
+      items: items,
+      notes: (fd.get('notes') || '').trim()
+    };
+
+    const required = ['residence', 'name', 'address', 'phone', 'email', 'bankName', 'branchName', 'accountName', 'accountNumber'];
+    for (const k of required) {
+      if (!payload[k]) { showError(t.error_required); return; }
+    }
+
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = t.submitting;
+
+    google.script.run
+      .withSuccessHandler(result => {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = t.submit_button;
+        if (result && result.ok) {
+          form.style.display = 'none';
+          successScreen.style.display = 'block';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          showError((result && result.message) || t.error_title);
+        }
+      })
+      .withFailureHandler(err => {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = t.submit_button;
+        showError(err.message || String(err));
+      })
+      .submitInvoiceRequest(payload);
+  });
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  /* ── 「もう一件」ボタン ── */
+  btnNew.addEventListener('click', () => {
+    form.reset();
+    itemsContainer.innerHTML = '';
+    itemsContainer.appendChild(createItemRow());
+    recalculateTotal();
+    form.style.display = 'block';
+    successScreen.style.display = 'none';
+    updateResidenceHint();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+</script>

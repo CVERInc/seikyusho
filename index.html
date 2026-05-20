@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= companyNames.ja || 'Invoice' ?> 請求書発行</title>
+  <?!= include('style'); ?>
+  <?!= include('i18n'); ?>
+  <script>
+    // サーバーから注入された企業名 (3 言語) で {{COMPANY_NAME}} placeholder を置換
+    const COMPANY_NAMES = {
+      'ja-JP': <?!= JSON.stringify(companyNames['ja-JP'] || '') ?>,
+      'en-US': <?!= JSON.stringify(companyNames['en-US'] || '') ?>,
+      'zh-TW': <?!= JSON.stringify(companyNames['zh-TW'] || '') ?>
+    };
+    Object.keys(TRANSLATIONS).forEach(function(langKey) {
+      var name = COMPANY_NAMES[langKey] || '';
+      Object.keys(TRANSLATIONS[langKey]).forEach(function(k) {
+        TRANSLATIONS[langKey][k] = String(TRANSLATIONS[langKey][k]).split('{{COMPANY_NAME}}').join(name);
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="container">
+    <header class="page-header">
+      <h1 class="page-title" data-i18n="page_title">請求書発行</h1>
+      <div class="lang-switcher">
+        <label>Language</label>
+        <select id="lang-select">
+          <option value="ja-JP">日本語</option>
+          <option value="en-US">English</option>
+          <option value="zh-TW">繁體中文</option>
+        </select>
+      </div>
+    </header>
+
+    <p class="intro" data-i18n="intro"></p>
+
+    <form id="invoice-form" novalidate>
+      <!-- 居住地 -->
+      <section class="card">
+        <h2 data-i18n="section_residence">居住地</h2>
+        <div class="radio-group">
+          <label class="radio-tile">
+            <input type="radio" name="residence" value="japan" required>
+            <span data-i18n="residence_japan">日本国内</span>
+          </label>
+          <label class="radio-tile">
+            <input type="radio" name="residence" value="overseas" required>
+            <span data-i18n="residence_overseas">日本国外</span>
+          </label>
+        </div>
+        <p class="hint" id="residence-hint"></p>
+      </section>
+
+      <!-- 個人情報 -->
+      <section class="card">
+        <h2 data-i18n="section_personal">あなたの情報</h2>
+        <div class="field">
+          <label data-i18n="label_name">氏名（本名）</label>
+          <input type="text" name="name" data-i18n-placeholder="placeholder_name" required>
+        </div>
+        <div class="field">
+          <label data-i18n="label_address">住所</label>
+          <input type="text" name="address" data-i18n-placeholder="placeholder_address" required>
+        </div>
+        <div class="field">
+          <label data-i18n="label_phone">電話番号</label>
+          <input type="text" name="phone" data-i18n-placeholder="placeholder_phone" required>
+        </div>
+        <div class="field">
+          <label data-i18n="label_email">メールアドレス</label>
+          <input type="email" name="email" data-i18n-placeholder="placeholder_email" required>
+        </div>
+      </section>
+
+      <!-- 振込先 -->
+      <section class="card">
+        <h2 data-i18n="section_bank">振込先口座</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label data-i18n="label_bank_name">振込銀行名</label>
+            <input type="text" name="bankName" data-i18n-placeholder="placeholder_bank_name" required>
+          </div>
+          <div class="field">
+            <label data-i18n="label_branch_name">支店名</label>
+            <input type="text" name="branchName" data-i18n-placeholder="placeholder_branch_name" required>
+          </div>
+          <div class="field">
+            <label data-i18n="label_account_name">口座名義</label>
+            <input type="text" name="accountName" data-i18n-placeholder="placeholder_account_name" required>
+          </div>
+          <div class="field">
+            <label data-i18n="label_account_number">口座番号</label>
+            <input type="text" name="accountNumber" data-i18n-placeholder="placeholder_account_number" required>
+          </div>
+        </div>
+      </section>
+
+      <!-- 請求内容 -->
+      <section class="card">
+        <h2 data-i18n="section_invoice">請求内容</h2>
+        <div class="field currency-field">
+          <label data-i18n="label_currency">通貨</label>
+          <select name="currency" id="currency-select">
+            <option value="JPY">JPY (¥)</option>
+            <option value="TWD">TWD (NT$)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </div>
+
+        <label class="items-label" data-i18n="label_items">請求明細</label>
+        <div class="items-header">
+          <span data-i18n="item_name">品名</span>
+          <span data-i18n="item_quantity">数量</span>
+          <span data-i18n="item_unit_price">単価</span>
+          <span data-i18n="item_subtotal">小計</span>
+          <span></span>
+        </div>
+        <div id="items-container"></div>
+        <button type="button" class="btn-add" id="btn-add-item" data-i18n="add_item">＋ 明細を追加</button>
+
+        <div class="summary">
+          <div class="summary-row">
+            <span data-i18n="summary_subtotal">小計</span>
+            <span id="summary-subtotal">0</span>
+          </div>
+          <div class="summary-row consumption-tax-row" style="display:none;">
+            <span data-i18n="summary_consumption_tax">消費税（10%）</span>
+            <span id="summary-tax">0</span>
+          </div>
+          <div class="summary-row summary-total">
+            <span data-i18n="summary_estimated_total">概算合計</span>
+            <span id="summary-total">0</span>
+          </div>
+          <p class="hint" data-i18n="summary_withholding_note"></p>
+        </div>
+      </section>
+
+      <!-- 備考 -->
+      <section class="card">
+        <h2 data-i18n="section_notes">備考（任意）</h2>
+        <textarea name="notes" rows="3" data-i18n-placeholder="placeholder_notes"></textarea>
+      </section>
+
+      <button type="submit" class="btn-submit" id="btn-submit" data-i18n="submit_button">送信する</button>
+      <div id="error-box" class="error-box" style="display:none;"></div>
+    </form>
+
+    <div id="success-screen" class="success-screen" style="display:none;">
+      <div class="success-icon">✓</div>
+      <h2 data-i18n="success_title">送信完了！</h2>
+      <p data-i18n="success_message"></p>
+      <button type="button" class="btn-secondary" id="btn-new" data-i18n="new_submission">もう一件作成する</button>
+    </div>
+  </div>
+
+  <script>
+    window.INITIAL_LANG = <?!= JSON.stringify(lang) ?>;
+  </script>
+  <?!= include('script'); ?>
+</body>
+</html>
