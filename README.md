@@ -239,11 +239,12 @@ flowchart TD
 
 ### 🤝 貢献
 
-Issue や Pull Request 歓迎します。
+Issue や Pull Request 歓迎します。詳しい貢献ガイドは [**CONTRIBUTING.md**](./CONTRIBUTING.md) を参照してください。
 
-- バグ報告 → 再現手順を添えて Issue
-- 機能提案 → Discussions または Issue
-- 翻訳追加（他言語対応）→ `i18n.html` に新言語を追加する PR
+- 🐛 バグ報告 → 再現手順を添えて Issue
+- 💡 機能提案 → Discussions または Issue
+- 🌐 翻訳追加 → [新言語追加ガイド](./CONTRIBUTING.md#-新言語の追加方法)（8 ステップで完了）
+- 💴 新通貨対応 → [新通貨追加ガイド](./CONTRIBUTING.md#-新通貨の追加方法)
 
 ### 📜 ライセンス
 
@@ -465,11 +466,12 @@ In the spreadsheet menu: **請求書 → ❌ 全テストデータ削除**. Subm
 
 ### 🤝 Contributing
 
-Issues and PRs welcome.
+Issues and PRs welcome. See [**CONTRIBUTING.md**](./CONTRIBUTING.md) for the full guide.
 
-- Bug reports → include reproduction steps
-- Feature requests → Discussions or Issues
-- Translations (additional languages) → submit a PR adding a language to `i18n.html`
+- 🐛 Bug reports → include reproduction steps
+- 💡 Feature requests → Discussions or Issues
+- 🌐 Translations → [Adding a new language guide](./CONTRIBUTING.md#-adding-a-new-language) (8 steps)
+- 💴 New currency → [Adding a new currency guide](./CONTRIBUTING.md#-adding-a-new-currency)
 
 ### 📜 License
 
