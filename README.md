@@ -29,7 +29,7 @@ Google Workspace の標準機能だけで完結し、外部サービス・サー
 - 🌐 **多言語対応フォーム**（日本語 / English / 繁體中文 / Español・URL パラメータで切替可）
 - 📄 **3 種類の PDF テンプレート自動切替**（海外居住者 / 国内・源泉なし / 国内・源泉あり）
 - 🔢 **月別連番採番**（例: `202605-001`）
-- 💴 **多通貨対応**（JPY / TWD / USD、必要なら拡張可能）
+- 💴 **多通貨対応**（JPY / TWD / USD / EUR、必要なら拡張可能）
 - 🧮 **税計算の自動化**（消費税 10%、源泉所得税 10.21% / 20.42%、100万円基準）
 - 📧 **3 種類の自動メール**:
   - 申請受付時 → 担当者へ PDF 添付通知
@@ -268,7 +268,7 @@ Built entirely on Google Workspace — no external services, servers, or databas
 - 🌐 **Multilingual form** (Japanese / English / Traditional Chinese / Spanish, switchable via URL param)
 - 📄 **3 PDF templates auto-selected** (overseas resident / Japan w/o withholding / Japan with withholding)
 - 🔢 **Monthly sequential invoice numbering** (e.g., `202605-001`)
-- 💴 **Multi-currency** (JPY / TWD / USD, extensible)
+- 💴 **Multi-currency** (JPY / TWD / USD / EUR, extensible)
 - 🧮 **Automatic tax calculation** (10% consumption tax, 10.21% / 20.42% withholding tax with 1M JPY threshold)
 - 📧 **3 types of automated emails**:
   - On submission → admin receives notification with PDF attached

@@ -131,7 +131,7 @@ function validatePayload_(p) {
     branchName: String(p.branchName).slice(0, 100),
     accountName: String(p.accountName).slice(0, 100),
     accountNumber: String(p.accountNumber).slice(0, 50),
-    currency: ['JPY', 'TWD', 'USD'].indexOf(p.currency) >= 0 ? p.currency : 'JPY',
+    currency: ['JPY', 'TWD', 'USD', 'EUR'].indexOf(p.currency) >= 0 ? p.currency : 'JPY',
     items: items,
     notes: String(p.notes || '').slice(0, 500)
   };
@@ -688,6 +688,7 @@ function formatCurrency_(amount, currency) {
   if (currency === 'JPY') return '¥' + formatted;
   if (currency === 'TWD') return 'NT$ ' + formatted;
   if (currency === 'USD') return '$ ' + formatted;
+  if (currency === 'EUR') return '€' + formatted;
   return formatted;
 }
 
