@@ -15,8 +15,10 @@
       'zh-TW': <?!= JSON.stringify(companyNames['zh-TW'] || '') ?>,
       'es-ES': <?!= JSON.stringify(companyNames['es-ES'] || '') ?>
     };
+    // 該当言語の企業名が空欄なら ja-JP → en-US の順にフォールバック
+    var FALLBACK_COMPANY_NAME = COMPANY_NAMES['ja-JP'] || COMPANY_NAMES['en-US'] || COMPANY_NAMES['zh-TW'] || COMPANY_NAMES['es-ES'] || '';
     Object.keys(TRANSLATIONS).forEach(function(langKey) {
-      var name = COMPANY_NAMES[langKey] || '';
+      var name = COMPANY_NAMES[langKey] || FALLBACK_COMPANY_NAME;
       Object.keys(TRANSLATIONS[langKey]).forEach(function(k) {
         TRANSLATIONS[langKey][k] = String(TRANSLATIONS[langKey][k]).split('{{COMPANY_NAME}}').join(name);
       });
@@ -110,6 +112,7 @@
             <option value="JPY">JPY (¥)</option>
             <option value="TWD">TWD (NT$)</option>
             <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
           </select>
         </div>
 
