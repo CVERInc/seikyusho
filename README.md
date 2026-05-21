@@ -18,7 +18,7 @@
 
 外注先・フリーランスからの請求書発行を全自動化するシステムです。
 
-- **申請者**は多言語フォーム（日 / 英 / 繁中）に入力して送信するだけ
+- **申請者**は多言語フォーム（日本語 / English / 繁體中文 / Español）に入力して送信するだけ
 - **担当者**はメールを受け取り、シート上で「承認」または「差戻」を選ぶだけ
 - **PDF 生成、番号採番、税計算、通知メール送信、Drive 保存**はすべて自動
 
@@ -50,7 +50,7 @@ Google Workspace の標準機能だけで完結し、外部サービス・サー
 | `index.html` | 申請者用 Web フォーム |
 | `style.html` | フォームの CSS（RWD 対応）|
 | `script.html` | フォームの JavaScript |
-| `i18n.html` | 多言語翻訳辞書（ja / en / zh / es）|
+| `i18n.html` | 多言語翻訳辞書（日本語 / English / 繁體中文 / Español）|
 
 ### 🔧 必要なもの
 
@@ -290,7 +290,7 @@ Built entirely on Google Workspace — no external services, servers, or databas
 | `index.html` | Applicant-facing web form |
 | `style.html` | Form CSS (responsive) |
 | `script.html` | Form JavaScript |
-| `i18n.html` | Translation dictionary (ja / en / zh / es) |
+| `i18n.html` | Translation dictionary (日本語 / English / 繁體中文 / Español) |
 
 ### 🔧 Prerequisites
 
