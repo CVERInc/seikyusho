@@ -82,7 +82,6 @@ function installStatusEditTrigger() {
 }
 
 function runSetup() {
-  const ui = SpreadsheetApp.getUi ? null : null;
   let ss;
   const existingId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 
@@ -540,9 +539,9 @@ function addMissingSettings() {
     ['qualified_invoice_number', '', '適格請求書発行事業者登録番号 (例: T1234567890123、未登録なら空欄)'],
     ['show_corporate_number', 'no', 'PDF に法人番号を表示する (yes/no、インボイス未登録時は no 推奨)'],
     ['email_subject_approved', '請求書 {{INVOICE_NO}} が承認されました', '【承認時】申請者宛メール件名'],
-    ['email_body_approved', 'ご請求ありがとうございました。請求が承認されましたので、お支払いまで今しばらくお待ちください', '【承認時】申請者宛メール本文（{{APPLICANT_NAME}} {{INVOICE_NO}} 使用可）'],
+    ['email_body_approved', '{{APPLICANT_NAME}}様\n\nご請求ありがとうございました。\n\n請求が承認されましたので、お支払いまで今しばらくお待ちください。', '【承認時】申請者宛メール本文（{{APPLICANT_NAME}} {{INVOICE_NO}} 使用可）'],
     ['email_subject_rejected', '請求書 {{INVOICE_NO}} は差戻となりました', '【差戻時】申請者宛メール件名'],
-    ['email_body_rejected', 'ご請求ありがとうございました。請求内容に不備がありましたので差戻いたします。差戻事由を担当者にご確認ください。ご確認いただきましたら請求の再申請をお願いいたします', '【差戻時】申請者宛メール本文（{{APPLICANT_NAME}} {{INVOICE_NO}} 使用可）']
+    ['email_body_rejected', '{{APPLICANT_NAME}}様\n\nご請求ありがとうございました。\n\n請求内容に不備がありましたので差戻いたします。\n\n差戻事由を担当者にご確認ください。\n\nご確認いただきましたら請求の再申請をお願いいたします。', '【差戻時】申請者宛メール本文（{{APPLICANT_NAME}} {{INVOICE_NO}} 使用可）']
   ];
 
   const existing = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues().map(r => r[0]);

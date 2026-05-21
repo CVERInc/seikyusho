@@ -50,7 +50,7 @@ Google Workspace の標準機能だけで完結し、外部サービス・サー
 | `index.html` | 申請者用 Web フォーム |
 | `style.html` | フォームの CSS（RWD 対応）|
 | `script.html` | フォームの JavaScript |
-| `i18n.html` | 多言語翻訳辞書（ja / en / zh）|
+| `i18n.html` | 多言語翻訳辞書（ja / en / zh / es）|
 
 ### 🔧 必要なもの
 
@@ -290,7 +290,7 @@ Built entirely on Google Workspace — no external services, servers, or databas
 | `index.html` | Applicant-facing web form |
 | `style.html` | Form CSS (responsive) |
 | `script.html` | Form JavaScript |
-| `i18n.html` | Translation dictionary (ja / en / zh) |
+| `i18n.html` | Translation dictionary (ja / en / zh / es) |
 
 ### 🔧 Prerequisites
 

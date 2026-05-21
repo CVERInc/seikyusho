@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title><?= companyNames.ja || 'Invoice' ?> 請求書発行</title>
+  <title><?= companyNames['ja-JP'] || companyNames['en-US'] || 'Invoice' ?> 請求書発行</title>
   <?!= include('style'); ?>
   <?!= include('i18n'); ?>
   <script>

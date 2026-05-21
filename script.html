@@ -69,7 +69,7 @@
   /* ── 通貨フォーマット ── */
   function formatCurrency(amount) {
     const n = Math.round(Number(amount) || 0);
-    const formatted = n.toLocaleString('en-US');
+    const formatted = n.toLocaleString('ja-JP');
     const cur = currencySelect.value;
     if (cur === 'JPY') return '¥' + formatted;
     if (cur === 'TWD') return 'NT$ ' + formatted;
