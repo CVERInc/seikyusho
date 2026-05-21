@@ -22,8 +22,9 @@ Thumbs.db
 .env.local
 *.local
 
-# Claude / drafts / memos
+# Claude / drafts / memos / handoff (含 SODAART script ID 等私密資訊)
 .claude/
 MEMO.md
 DRAFT.md
 NOTES.md
+HANDOFF.md
