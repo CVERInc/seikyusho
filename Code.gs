@@ -285,6 +285,7 @@ function generateInvoiceForRow(rowNumber, overrideInvoiceNo) {
     accountNumber: getCol('口座番号'),
     items: items,
     currency: currency,
+    residence: residence,
     subtotal: subtotal,
     consumptionTax: consumptionTax,
     withholdingTax: withholdingTax,
