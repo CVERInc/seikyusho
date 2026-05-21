@@ -8,11 +8,11 @@
 [![Apps Script](https://img.shields.io/badge/Built%20with-Google%20Apps%20Script-4285F4)](https://script.google.com/)
 [![i18n](https://img.shields.io/badge/i18n-ja--JP%20%2F%20en--US%20%2F%20zh--TW%20%2F%20es--ES-success)](#)
 
-[**🇯🇵 日本語**](#-日本語) ・ [**🇬🇧 English**](#-english)
+[**日本語**](#日本語) ・ [**English**](#english)
 
 ---
 
-## 🇯🇵 日本語
+## 日本語
 
 ### 📌 概要
 
@@ -252,7 +252,7 @@ Issue や Pull Request 歓迎します。詳しい貢献ガイドは [**CONTRIBU
 
 ---
 
-## 🇬🇧 English
+## English
 
 ### 📌 Overview
 

@@ -2,11 +2,11 @@
 
 Issue、Pull Request、翻訳追加、すべて歓迎します 🙌
 
-[**🇯🇵 日本語**](#-日本語) ・ [**🇬🇧 English**](#-english)
+[**日本語**](#日本語) ・ [**English**](#english)
 
 ---
 
-## 🇯🇵 日本語
+## 日本語
 
 ### 貢献の種類
 
@@ -146,7 +146,7 @@ language: ['ja-JP', 'en-US', 'zh-TW', 'es-ES', 'de-DE'].indexOf(p.language) >= 0
 
 ---
 
-## 🇬🇧 English
+## English
 
 ### Types of Contributions
 
