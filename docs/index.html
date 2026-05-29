@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>seikyusho — 申請を受け、請求書を自動発行する Google Apps Script</title>
+  <meta name="description" content="Accept invoice requests on a multilingual form; auto-generate numbered PDF invoices with correct Japanese tax, and route approval emails — all on your own Google Workspace. No servers, no database. MIT.">
+  <meta property="og:title" content="seikyusho — invoice automation on Google Apps Script">
+  <meta property="og:description" content="Multilingual request form · auto PDF invoices · consumption & withholding tax · approval workflow · runs on your own Google. MIT.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://oss.cver.net/seikyusho/">
+  <meta name="theme-color" content="#0d3b1e">
+  <link rel="icon" type="image/png" sizes="100x100" href="https://cver.net/cver-logo-small.png">
+  <link rel="icon" type="image/png" sizes="630x630" href="https://cver.net/cver-logo.png">
+  <link rel="apple-touch-icon" href="https://cver.net/cver-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #1f8e3d;
+      --green-bright: #36c95f;
+      --dark-green: #0f5226;
+      --deep: #082615;
+      --mint: #b6f0c6;
+      --text: #e9f6ec;
+      --text-dim: rgba(233, 246, 236, 0.66);
+      --text-faint: rgba(233, 246, 236, 0.42);
+      --surface: rgba(255, 255, 255, 0.06);
+      --surface-2: rgba(255, 255, 255, 0.09);
+      --border: rgba(182, 240, 198, 0.18);
+      --code-bg: rgba(4, 26, 13, 0.7);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Nunito', system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 700px at 78% -8%, rgba(182, 240, 198, 0.16), transparent 60%),
+        radial-gradient(900px 800px at 12% 8%, rgba(31, 142, 61, 0.30), transparent 62%),
+        linear-gradient(160deg, var(--dark-green) 0%, var(--deep) 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+    /* Nav */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px; max-width: 980px; margin: 0 auto; }
+    .brand { font-family: 'Comfortaa', cursive; font-weight: 700; font-size: 1.4rem; letter-spacing: -0.01em; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .brand .badge { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.7rem; background: linear-gradient(135deg, var(--green), var(--green-bright)); color: #06210f; padding: 3px 9px; border-radius: 999px; letter-spacing: 0.02em; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-link { text-decoration: none; color: var(--text-dim); font-weight: 600; font-size: 0.92rem; padding: 8px 14px; border-radius: 999px; transition: all 0.2s ease; }
+    .nav-link:hover { color: #fff; background: var(--surface); }
+    .lang-toggle { cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: inherit; font-weight: 700; font-size: 0.82rem; padding: 7px 14px; border-radius: 999px; transition: all 0.2s ease; }
+    .lang-toggle:hover { background: var(--surface-2); border-color: var(--mint); }
+
+    /* Hero */
+    header.hero { text-align: center; padding: 52px 0 36px; }
+    .wordmark { font-family: 'Comfortaa', cursive; font-weight: 700; font-size: clamp(2.8rem, 8vw, 4.8rem); line-height: 1; letter-spacing: -0.02em; color: #fff; margin-bottom: 18px; text-shadow: 0 8px 40px rgba(182, 240, 198, 0.25); }
+    .tagline { font-size: clamp(1.1rem, 3vw, 1.55rem); font-weight: 700; color: var(--mint); margin-bottom: 14px; }
+    .sub { font-size: 1.05rem; color: var(--text-dim); max-width: 640px; margin: 0 auto 10px; }
+    .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+    .btn { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; font-weight: 700; font-size: 1rem; padding: 14px 26px; border-radius: 14px; transition: all 0.2s ease; border: 1px solid transparent; }
+    .btn-primary { background: var(--mint); color: var(--deep); box-shadow: 0 8px 28px rgba(182, 240, 198, 0.28); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(182, 240, 198, 0.4); }
+    .btn-ghost { background: var(--surface); color: #fff; border-color: var(--border); }
+    .btn-ghost:hover { background: var(--surface-2); transform: translateY(-2px); }
+    .demo-note { font-size: 0.82rem; color: var(--text-faint); margin-top: 16px; }
+
+    /* Sections */
+    section { padding: 48px 0; }
+    .section-title { font-family: 'Comfortaa', cursive; font-weight: 700; font-size: 1.8rem; color: #fff; text-align: center; margin-bottom: 8px; }
+    .section-lead { text-align: center; color: var(--text-dim); max-width: 640px; margin: 0 auto 36px; }
+
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: all 0.2s ease; }
+    .card:hover { background: var(--surface-2); transform: translateY(-3px); }
+    .card .ic { font-size: 1.6rem; margin-bottom: 12px; }
+    .card h3 { font-family: 'Comfortaa', cursive; font-weight: 600; font-size: 1.05rem; color: #fff; margin-bottom: 7px; }
+    .card p { font-size: 0.92rem; color: var(--text-dim); }
+
+    /* Flow */
+    .flow { max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
+    .flow-step { display: flex; gap: 16px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+    .flow-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--mint); color: var(--deep); font-weight: 800; display: grid; place-items: center; font-size: 0.95rem; }
+    .flow-step h4 { font-size: 1.02rem; color: #fff; margin-bottom: 3px; }
+    .flow-step p { font-size: 0.9rem; color: var(--text-dim); }
+
+    /* Deploy / BYOG */
+    .deploy { max-width: 760px; margin: 0 auto; }
+    .step { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; margin-bottom: 16px; }
+    .step-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+    .step-badge { font-family: 'Comfortaa', cursive; font-weight: 700; font-size: 0.8rem; color: var(--deep); background: var(--mint); border-radius: 999px; padding: 3px 11px; white-space: nowrap; }
+    .step-head h3 { font-family: 'Comfortaa', cursive; font-weight: 600; font-size: 1.1rem; color: #fff; }
+    .step p { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 12px; }
+    .step ol { color: var(--text-dim); font-size: 0.92rem; margin: 0 0 4px 1.1rem; }
+    .step ol li { margin-bottom: 5px; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; font-size: 0.84rem; color: var(--mint); line-height: 1.7; }
+    pre .c { color: var(--text-faint); }
+    .reqs { text-align: center; color: var(--text-faint); font-size: 0.86rem; margin-top: 24px; }
+    .callout { background: rgba(182, 240, 198, 0.08); border: 1px dashed var(--border); border-radius: 12px; padding: 14px 18px; font-size: 0.9rem; color: var(--text-dim); margin: 0 auto 24px; max-width: 760px; }
+    .callout b { color: var(--mint); }
+
+    /* Footer (CVER OSS common footer) */
+    footer { text-align: center; padding: 44px 24px 56px; color: var(--text-faint); font-size: 0.86rem; border-top: 1px solid var(--border); margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    footer a { color: var(--text-dim); text-decoration: none; font-weight: 600; }
+    footer a:hover { color: var(--mint); }
+    .foot-links { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+    .foot-logo { opacity: 0.9; transition: opacity 0.2s; }
+    .foot-logo:hover { opacity: 1; }
+    .foot-logo img { width: 44px; height: 44px; }
+    .foot-sep { color: var(--text-faint); }
+
+    [data-en] { display: none; }
+    body.en [data-zh] { display: none; }
+    body.en [data-en] { display: revert; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <span class="brand">seikyusho <span class="badge">by cver.net</span></span>
+    <div class="nav-right">
+      <a class="nav-link" href="#deploy"><span data-zh>導入</span><span data-en>Deploy</span></a>
+      <a class="nav-link" href="https://github.com/CVERInc/seikyusho" target="_blank" rel="noopener">GitHub</a>
+      <button class="lang-toggle" id="langBtn">EN</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <h1 class="wordmark">seikyusho</h1>
+      <p class="tagline">
+        <span data-zh>申請を受け、請求書を自動で発行する</span>
+        <span data-en>Turn invoice requests into finished PDF invoices — automatically</span>
+      </p>
+      <p class="sub">
+        <span data-zh>外注先・フリーランスからの請求書発行を全自動化。多言語フォームで受け付け、番号採番・税計算・PDF 生成・承認メールまで、すべてあなた自身の Google Workspace 上で完結します。サーバーもデータベースも不要。</span>
+        <span data-en>Automate invoicing for contractors and freelancers. A multilingual form collects the request; numbering, tax, PDF generation, and approval emails all run on your own Google Workspace. No servers, no database.</span>
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="demo/">
+          <span data-zh>▶ ライブデモを試す</span><span data-en>▶ Try the live demo</span>
+        </a>
+        <a class="btn btn-ghost" href="#deploy">
+          <span data-zh>自分で導入する（BYOG）</span><span data-en>Deploy your own (BYOG)</span>
+        </a>
+      </div>
+      <p class="demo-note">
+        <span data-zh>ライブデモは純フロントエンドのシミュレーション — 本物のフォームと税計算を、メール送信・データ保存なしで体験できます。</span>
+        <span data-en>The live demo is a pure front-end simulation — the real form and tax logic, with no email and nothing stored.</span>
+      </p>
+    </div>
+  </header>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title"><span data-zh>主な機能</span><span data-en>What it does</span></h2>
+      <p class="section-lead">
+        <span data-zh>Google Workspace の標準機能だけで、請求書発行の往復をまるごと自動化します。</span>
+        <span data-en>It automates the whole invoice round-trip using nothing but standard Google Workspace.</span>
+      </p>
+      <div class="features">
+        <div class="card"><div class="ic">🌐</div><h3><span data-zh>多言語フォーム</span><span data-en>Multilingual form</span></h3><p><span data-zh>日本語 / English / 繁體中文 / Español。URL パラメータでも切替可。</span><span data-en>Japanese, English, Traditional Chinese, Spanish — switchable, also via URL param.</span></p></div>
+        <div class="card"><div class="ic">🧮</div><h3><span data-zh>税計算の自動化</span><span data-en>Automatic tax</span></h3><p><span data-zh>消費税 10%、源泉所得税 10.21% / 20.42%（100万円基準）を自動計算。</span><span data-en>10% consumption tax and 10.21% / 20.42% withholding (1M JPY threshold), computed for you.</span></p></div>
+        <div class="card"><div class="ic">📄</div><h3><span data-zh>3 種の PDF を自動切替</span><span data-en>3 PDF templates</span></h3><p><span data-zh>海外居住者 / 国内・源泉なし / 国内・源泉ありを居住地と源泉適用で自動選択。</span><span data-en>Overseas / domestic-no-withholding / domestic-with-withholding, auto-selected.</span></p></div>
+        <div class="card"><div class="ic">🔢</div><h3><span data-zh>月別連番採番</span><span data-en>Sequential numbering</span></h3><p><span data-zh>例 <code>202605-001</code>。月ごとに自動でリセット・採番。</span><span data-en>e.g. <code>202605-001</code>, auto-incremented per month.</span></p></div>
+        <div class="card"><div class="ic">📧</div><h3><span data-zh>承認ワークフロー</span><span data-en>Approval workflow</span></h3><p><span data-zh>受付・承認・差戻でそれぞれ自動メール。文面はシートで編集可能。</span><span data-en>Auto-emails on submit / approve / reject. Wording editable from the sheet.</span></p></div>
+        <div class="card"><div class="ic">🧾</div><h3><span data-zh>インボイス制度対応</span><span data-en>Qualified Invoice ready</span></h3><p><span data-zh>適格請求書発行事業者登録番号の表示／非表示を選択可能。</span><span data-en>Toggle the qualified-invoice registration number on the PDF.</span></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2 class="section-title"><span data-zh>運用フロー</span><span data-en>How it flows</span></h2>
+      <div class="flow">
+        <div class="flow-step"><div class="flow-num">1</div><div><h4><span data-zh>申請者がフォーム送信</span><span data-en>Applicant submits the form</span></h4><p><span data-zh>多言語フォームに請求内容・振込先を入力して送信。</span><span data-en>They fill in items and bank details in their own language.</span></p></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div><h4><span data-zh>自動で番号採番・PDF 生成</span><span data-en>Auto numbering & PDF</span></h4><p><span data-zh>居住地と源泉適用に応じて 3 種のテンプレートから自動生成。</span><span data-en>The right template of three is filled and exported automatically.</span></p></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div><h4><span data-zh>担当者へ通知メール</span><span data-en>Admin gets notified</span></h4><p><span data-zh>PDF 添付のメールが届き、シート上で承認 / 差戻を選ぶだけ。</span><span data-en>An email with the PDF arrives; approve or reject on the sheet.</span></p></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div><h4><span data-zh>申請者へ自動返信・Drive 保存</span><span data-en>Applicant notified, archived to Drive</span></h4><p><span data-zh>結果メールを自動送信し、PDF は Drive フォルダへ自動保存。</span><span data-en>A result email is sent and the PDF is filed in a Drive folder.</span></p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="deploy">
+    <div class="wrap">
+      <h2 class="section-title"><span data-zh>自分で導入する（BYOG）</span><span data-en>Deploy your own (BYOG)</span></h2>
+      <p class="section-lead">
+        <span data-zh>あなた自身の Google アカウントに載せて使います。請求書・PDF・メールはすべてあなたの Workspace 内で完結し、外部に出ません。</span>
+        <span data-en>It runs on your own Google account. Invoices, PDFs and emails stay entirely inside your Workspace — nothing leaves it.</span>
+      </p>
+
+      <div class="callout">
+        <span data-zh><b>なぜ「自分で導入」なのか：</b> Google Apps Script の Web アプリは「デプロイした人の権限」で動きます。だからこそ請求書データも個人情報もすべて<b>あなたの</b>アカウント内に留まります。最後の「Web アプリとしてデプロイ」の一手だけは、Google の仕様上あなた自身がご自分のアカウントで行う必要があります（約 3 分）。</span>
+        <span data-en><b>Why deploy your own:</b> A Google Apps Script web app runs as <b>the account that deploys it</b> — which is exactly why your invoice data and personal info stay in <b>your</b> account. By Google's design, the final "deploy as web app" step must be done by you, in your account (~3 min).</span>
+      </div>
+
+      <div class="step">
+        <div class="step-head"><span class="step-badge">A</span><h3><span data-zh>clasp で push（約 3 分）</span><span data-en>Push with clasp (~3 min)</span></h3></div>
+        <p><span data-zh>dev に慣れている人向け。clone して新しい Apps Script プロジェクトへ push し、セットアップ関数を 1 回実行するだけ。</span><span data-en>For the dev-comfortable. Clone, push into a fresh Apps Script project, then run one setup function.</span></p>
+<pre>npm install -g @google/clasp
+clasp login
+git clone https://github.com/CVERInc/seikyusho.git
+cd seikyusho
+clasp create --type standalone --title "seikyusho"
+clasp push -f
+<span class="c"># Apps Script で setup() を1回実行 → 設定シート記入 → Web アプリとしてデプロイ</span>
+<span class="c"># run setup() once in Apps Script → fill the Settings sheet → deploy as web app</span></pre>
+      </div>
+
+      <div class="step">
+        <div class="step-head"><span class="step-badge">B</span><h3><span data-zh>手動コピペ（GAS 初心者向け）</span><span data-en>Manual copy/paste (GAS beginners)</span></h3></div>
+        <ol>
+          <li><span data-zh>script.google.com で新規プロジェクトを作成</span><span data-en>Create a new project at script.google.com</span></li>
+          <li><span data-zh>リポジトリの 7 ファイルを 1:1 でコピー</span><span data-en>Copy the repo's 7 files 1:1</span></li>
+          <li><span data-zh><code>setup()</code> を 1 回実行（権限承認 → シート・トリガー・使い方を一括生成）</span><span data-en>Run <code>setup()</code> once (authorize → it creates the sheet, triggers and usage guide in one go)</span></li>
+          <li><span data-zh>「設定」シートに会社情報と通知先メールを記入</span><span data-en>Fill company info + notification email in the Settings sheet</span></li>
+          <li><span data-zh>「Web アプリとしてデプロイ」→ フォーム URL を共有</span><span data-en>Deploy as web app → share the form URL</span></li>
+        </ol>
+      </div>
+
+      <p class="reqs">
+        <span data-zh>必要なもの：Google アカウント（個人 / Workspace）· 通知用メールアドレス 1 件 · ブラウザ。詳細は <a href="https://github.com/CVERInc/seikyusho#-セットアップ手順" target="_blank" rel="noopener">README の導入手順</a> へ。</span>
+        <span data-en>Requirements: a Google account (personal/Workspace) · one notification email · a browser. Full guide in the <a href="https://github.com/CVERInc/seikyusho#-setup" target="_blank" rel="noopener">README</a>.</span>
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="foot-links">
+      <a href="https://cver.net/legal/terms" target="_blank" rel="noopener">Terms of Service</a>
+      <span class="foot-sep" aria-hidden="true">|</span>
+      <a href="https://cver.net/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a>
+      <span class="foot-sep" aria-hidden="true">|</span>
+      <a href="https://cver.net/contact" target="_blank" rel="noopener">Contact Us</a>
+    </div>
+    <a href="https://cver.net/" class="foot-logo">
+      <img src="https://cver.net/cver-logo-small.png" alt="CVER" width="44" height="44" draggable="false">
+    </a>
+    <div class="foot-links">
+      <a href="https://cver.net/about" target="_blank" rel="noopener">CVER.NET © 2011–2026 CVER Inc.</a>
+      <span class="foot-sep" aria-hidden="true">|</span>
+      <a href="https://github.com/CVERInc/seikyusho/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var btn = document.getElementById('langBtn');
+      btn.addEventListener('click', function () {
+        var en = document.body.classList.toggle('en');
+        document.documentElement.lang = en ? 'en' : 'ja';
+        btn.textContent = en ? '日本語' : 'EN';
+      });
+    })();
+  </script>
+
+  <!-- CVER OSS house package: zero-config iOS Safari chrome tinting. -->
+  <script type="module">import 'https://esm.sh/bleedblend@2.1.0/auto';</script>
+</body>
+</html>

@@ -40,6 +40,31 @@ const SUBMISSION_COLUMNS = [
 ];
 
 /**
+ * 🚀 ワンショット初期セットアップ（BYOG 導入用）。
+ *    One-shot first-time setup (for BYOG self-deployment).
+ *
+ * 正しい順序で初回セットアップをまとめて実行する。冪等（何度実行しても安全）：
+ * Runs the whole first-time setup in the right order — idempotent, safe to re-run:
+ *   1. runSetup()                 — Sheet・設定・番号管理・3 PDF テンプレートを作成/修復
+ *   2. installSheetMenuTrigger()  — 「請求書」カスタムメニューを有効化
+ *   3. installStatusEditTrigger() — 承認/差戻/源泉適用の自動処理トリガーを配線
+ *   4. populateUsageSheet()       — 「使い方」シートを生成
+ *
+ * 完了後 / after this: 「設定」シートに会社情報と notification_email を記入 →
+ * デプロイ → 新しいデプロイ → ウェブアプリ（実行: 自分 / アクセス: 全員）→
+ * /exec URL を「設定」の form_url に貼り、populateUsageSheet() を再実行。
+ */
+function setup() {
+  const url = runSetup();
+  installSheetMenuTrigger();
+  installStatusEditTrigger();
+  populateUsageSheet();
+  Logger.log('✅ seikyusho セットアップ完了 / setup complete.\n  ' + url +
+    '\n  次へ / next: 「設定」シート記入 → Web アプリとしてデプロイ → form_url を保存。');
+  return url;
+}
+
+/**
  * Sheet を開いた時に onOpen を自動実行するためのトリガー設定
  * スタンドアロンスクリプトでは simple trigger が起動しないため、installable trigger を使用する
  */
