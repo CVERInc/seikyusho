@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja-JP">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>seikyusho — live demo (請求書発行)</title>
+  <meta name="description" content="In-browser simulation of seikyusho. Fills the real multilingual form, runs the real tax logic, and renders an invoice preview — entirely client-side. No Google, no email, no data stored.">
+  <meta name="theme-color" content="#1f8e3d">
+  <link rel="icon" type="image/png" sizes="100x100" href="https://cver.net/cver-logo-small.png">
+  <link rel="apple-touch-icon" href="https://cver.net/cver-logo.png">
+  <style>
+    /* ============================================================
+       Form styles — ported verbatim from the real seikyusho
+       style.html so the demo form is pixel-faithful.
+       ============================================================ */
+    :root {
+      --green-primary: #1f8e3d;
+      --green-dark: #156a2c;
+      --green-light: #e8f5e9;
+      --green-bg: #f4faf5;
+      --text-primary: #1c1c1c;
+      --text-secondary: #555;
+      --text-muted: #888;
+      --border: #d8e0d8;
+      --error: #c0392b;
+      --error-bg: #fdecea;
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", "Noto Sans CJK TC", "Hiragino Sans", "Microsoft JhengHei", sans-serif;
+      background: var(--green-bg);
+      color: var(--text-primary);
+      margin: 0; padding: 0; line-height: 1.6;
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 32px 20px 60px; }
+
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 24px; padding-bottom: 20px;
+      border-bottom: 2px solid var(--green-primary);
+    }
+    .page-title { font-size: 28px; font-weight: 800; color: var(--green-primary); letter-spacing: 0.02em; margin: 0; line-height: 1.2; }
+    .lang-switcher { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+    .lang-switcher select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 13px; cursor: pointer; }
+    @media (max-width: 540px) {
+      .page-header { flex-direction: column; align-items: flex-start; }
+      .page-title { font-size: 24px; }
+      .lang-switcher { align-self: flex-end; }
+    }
+
+    .intro { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+
+    .card { background: white; border-radius: var(--radius); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .card h2 { margin: 0 0 16px; font-size: 17px; font-weight: 700; color: var(--green-dark); padding-bottom: 10px; border-bottom: 1px solid var(--green-light); }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 14px; font-family: inherit; background: white;
+      transition: border-color 0.15s, box-shadow 0.15s; box-sizing: border-box;
+    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--green-primary); box-shadow: 0 0 0 3px rgba(31,142,61,0.12); }
+    textarea { resize: vertical; min-height: 70px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 540px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .radio-tile {
+      display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+      border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer;
+      transition: all 0.15s; background: white; font-weight: 600; font-size: 14px;
+    }
+    .radio-tile:hover { border-color: var(--green-primary); background: var(--green-bg); }
+    .radio-tile input[type="radio"] { accent-color: var(--green-primary); }
+    .radio-tile:has(input:checked) { border-color: var(--green-primary); background: var(--green-light); color: var(--green-dark); }
+
+    .hint { font-size: 12px; color: var(--text-muted); margin: 10px 0 0; line-height: 1.5; }
+    .currency-field { max-width: 220px; }
+
+    .items-label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
+    .items-header { display: grid; grid-template-columns: 1fr 70px 110px 110px 40px; gap: 8px; padding: 0 6px 6px; font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+    .item-row { display: grid; grid-template-columns: 1fr 70px 110px 110px 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .item-row input { padding: 8px 10px; font-size: 13px; }
+    .item-row .item-subtotal { padding: 8px 10px; background: var(--green-light); border-radius: 8px; font-weight: 600; text-align: right; color: var(--green-dark); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-remove { background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+    .item-remove:hover { border-color: var(--error); color: var(--error); background: var(--error-bg); }
+    @media (max-width: 640px) {
+      .items-header { display: none; }
+      .item-row { grid-template-columns: 1fr; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
+      .item-row .item-subtotal { background: transparent; padding: 0; text-align: left; }
+      .item-row .item-remove { width: 100%; height: 36px; }
+    }
+
+    .btn-add { width: 100%; padding: 12px; background: var(--green-light); color: var(--green-dark); border: 1px dashed var(--green-primary); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 4px; transition: all 0.15s; }
+    .btn-add:hover { background: var(--green-primary); color: white; }
+
+    .summary { margin-top: 20px; padding: 16px; background: var(--green-bg); border-radius: 10px; border: 1px solid var(--green-light); }
+    .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; color: var(--text-secondary); }
+    .summary-row span:last-child { font-variant-numeric: tabular-nums; }
+    .summary-total { border-top: 1px solid var(--green-primary); margin-top: 6px; padding-top: 12px; font-size: 17px; font-weight: 700; color: var(--green-dark); }
+
+    .btn-submit { width: 100%; padding: 16px; background: var(--green-primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
+    .btn-submit:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31,142,61,0.3); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-box { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 14px; }
+
+    /* ============================================================
+       Demo-only chrome: banner + withholding toggle + invoice preview
+       ============================================================ */
+    .demo-banner {
+      background: linear-gradient(135deg, #156a2c, #1f8e3d);
+      color: #fff; text-align: center; font-size: 13px; font-weight: 600;
+      padding: 10px 16px; line-height: 1.5;
+    }
+    .demo-banner a { color: #d8f3df; }
+    .demo-banner .back { float: left; text-decoration: none; opacity: 0.9; }
+    .demo-banner .gh { float: right; text-decoration: none; opacity: 0.9; }
+    @media (max-width: 600px) { .demo-banner .back, .demo-banner .gh { float: none; display: block; } }
+
+    .demo-toggle {
+      display: flex; align-items: center; gap: 10px; margin-top: 12px;
+      padding: 12px 14px; border: 1.5px dashed var(--green-primary);
+      border-radius: 10px; background: var(--green-bg); font-size: 13px; font-weight: 600;
+      color: var(--green-dark); cursor: pointer;
+    }
+    .demo-toggle input { width: auto; accent-color: var(--green-primary); }
+    .demo-toggle .tag { font-weight: 800; font-size: 10px; letter-spacing: 0.08em; background: var(--green-primary); color: #fff; padding: 2px 6px; border-radius: 999px; }
+
+    /* Invoice preview (visually faithful to the generated PDF) */
+    .invoice-screen { display: none; }
+    .invoice-actions {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      margin: 0 auto 20px; max-width: 760px;
+    }
+    .invoice-actions button {
+      padding: 12px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--green-primary);
+    }
+    .btn-print { background: var(--green-primary); color: #fff; }
+    .btn-print:hover { background: var(--green-dark); }
+    .btn-back { background: #fff; color: var(--green-primary); }
+    .btn-back:hover { background: var(--green-light); }
+
+    .invoice {
+      max-width: 760px; margin: 0 auto; background: #fff; color: #1c1c1c;
+      border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: var(--shadow); padding: 48px 52px; font-size: 14px;
+    }
+    .inv-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--green-primary); padding-bottom: 16px; margin-bottom: 24px; }
+    .inv-head h1 { font-size: 30px; letter-spacing: 0.3em; margin: 0; color: var(--green-dark); }
+    .inv-meta { text-align: right; font-size: 13px; color: var(--text-secondary); }
+    .inv-meta b { color: var(--text-primary); }
+    .inv-parties { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .inv-party { font-size: 13px; }
+    .inv-party .lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .inv-party .big { font-size: 17px; font-weight: 700; }
+    .inv-total-band { background: var(--green-light); border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .inv-total-band .lbl { font-size: 14px; font-weight: 700; color: var(--green-dark); }
+    .inv-total-band .amt { font-size: 26px; font-weight: 800; color: var(--green-dark); font-variant-numeric: tabular-nums; }
+    table.inv-items { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+    table.inv-items th { background: var(--green-dark); color: #fff; font-size: 12px; font-weight: 700; padding: 9px 12px; text-align: left; }
+    table.inv-items th.num, table.inv-items td.num { text-align: right; }
+    table.inv-items td { padding: 9px 12px; border-bottom: 1px solid var(--green-light); font-variant-numeric: tabular-nums; }
+    .inv-summary { width: 280px; margin-left: auto; }
+    .inv-summary .row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; color: var(--text-secondary); }
+    .inv-summary .row.grand { border-top: 2px solid var(--green-primary); margin-top: 6px; padding-top: 10px; font-size: 17px; font-weight: 800; color: var(--green-dark); }
+    .inv-summary .row span:last-child { font-variant-numeric: tabular-nums; }
+    .inv-bank { margin-top: 24px; padding: 14px 16px; background: var(--green-bg); border: 1px solid var(--green-light); border-radius: 8px; font-size: 13px; }
+    .inv-bank .lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+    .inv-notes { margin-top: 16px; font-size: 13px; color: var(--text-secondary); }
+    .inv-footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+
+    @media print {
+      body { background: #fff; }
+      .demo-banner, .invoice-actions, .container { display: none !important; }
+      .invoice-screen { display: block !important; }
+      .invoice { box-shadow: none; border: none; border-radius: 0; max-width: none; margin: 0; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="demo-banner">
+    <a class="back" href="../">← seikyusho</a>
+    <a class="gh" href="https://github.com/CVERInc/seikyusho" target="_blank" rel="noopener">GitHub ↗</a>
+    <span data-i18n="demo_notice">這是純前端模擬：不寄信、不寫入任何試算表、不需登入 Google。資料只留在你的瀏覽器。</span>
+  </div>
+
+  <div class="container">
+    <header class="page-header">
+      <h1 class="page-title" data-i18n="page_title">請求書発行</h1>
+      <div class="lang-switcher">
+        <label>Language</label>
+        <select id="lang-select">
+          <option value="ja-JP">日本語</option>
+          <option value="en-US">English</option>
+          <option value="zh-TW">繁體中文</option>
+          <option value="es-ES">Español</option>
+        </select>
+      </div>
+    </header>
+
+    <p class="intro" data-i18n="intro"></p>
+
+    <form id="invoice-form" novalidate>
+      <section class="card">
+        <h2 data-i18n="section_residence">居住地</h2>
+        <div class="radio-group">
+          <label class="radio-tile">
+            <input type="radio" name="residence" value="japan" required>
+            <span data-i18n="residence_japan">日本国内</span>
+          </label>
+          <label class="radio-tile">
+            <input type="radio" name="residence" value="overseas" required>
+            <span data-i18n="residence_overseas">日本国外</span>
+          </label>
+        </div>
+        <p class="hint" id="residence-hint"></p>
+        <!-- DEMO-ONLY: lets visitors preview the 源泉あり (with-withholding) template,
+             which in the real system is decided later by the admin, not the applicant. -->
+        <label class="demo-toggle" id="withholding-toggle-wrap" style="display:none;">
+          <input type="checkbox" id="withholding-toggle">
+          <span class="tag">DEMO</span>
+          <span data-i18n="demo_withholding">源泉徴収を適用してプレビュー（本番では担当者が後から判定）</span>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="section_personal">あなたの情報</h2>
+        <div class="field">
+          <label data-i18n="label_name">氏名（本名）</label>
+          <input type="text" name="name" data-i18n-placeholder="placeholder_name" required>
+        </div>
+        <div class="field">
+          <label data-i18n="label_address">住所</label>
+          <input type="text" name="address" data-i18n-placeholder="placeholder_address" required>
+        </div>
+        <div class="field">
+          <label data-i18n="label_phone">電話番号</label>
+          <input type="text" name="phone" data-i18n-placeholder="placeholder_phone" required>
+        </div>
+        <div class="field">
+          <label data-i18n="label_email">メールアドレス</label>
+          <input type="email" name="email" data-i18n-placeholder="placeholder_email" required>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="section_bank">振込先口座</h2>
+        <div class="grid-2">
+          <div class="field"><label data-i18n="label_bank_name">振込銀行名</label><input type="text" name="bankName" data-i18n-placeholder="placeholder_bank_name" required></div>
+          <div class="field"><label data-i18n="label_branch_name">支店名</label><input type="text" name="branchName" data-i18n-placeholder="placeholder_branch_name" required></div>
+          <div class="field"><label data-i18n="label_account_name">口座名義</label><input type="text" name="accountName" data-i18n-placeholder="placeholder_account_name" required></div>
+          <div class="field"><label data-i18n="label_account_number">口座番号</label><input type="text" name="accountNumber" data-i18n-placeholder="placeholder_account_number" required></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="section_invoice">請求内容</h2>
+        <div class="field currency-field">
+          <label data-i18n="label_currency">通貨</label>
+          <select name="currency" id="currency-select">
+            <option value="JPY">JPY (¥)</option>
+            <option value="TWD">TWD (NT$)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+          </select>
+        </div>
+
+        <label class="items-label" data-i18n="label_items">請求明細</label>
+        <div class="items-header">
+          <span data-i18n="item_name">品名</span>
+          <span data-i18n="item_quantity">数量</span>
+          <span data-i18n="item_unit_price">単価</span>
+          <span data-i18n="item_subtotal">小計</span>
+          <span></span>
+        </div>
+        <div id="items-container"></div>
+        <button type="button" class="btn-add" id="btn-add-item" data-i18n="add_item">＋ 明細を追加</button>
+
+        <div class="summary">
+          <div class="summary-row"><span data-i18n="summary_subtotal">小計</span><span id="summary-subtotal">0</span></div>
+          <div class="summary-row consumption-tax-row" style="display:none;"><span data-i18n="summary_consumption_tax">消費税（10%）</span><span id="summary-tax">0</span></div>
+          <div class="summary-row summary-total"><span data-i18n="summary_estimated_total">概算合計</span><span id="summary-total">0</span></div>
+          <p class="hint" data-i18n="summary_withholding_note"></p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="section_notes">備考（任意）</h2>
+        <textarea name="notes" rows="3" data-i18n-placeholder="placeholder_notes"></textarea>
+      </section>
+
+      <button type="submit" class="btn-submit" id="btn-submit" data-i18n="submit_demo">請求書プレビューを生成</button>
+      <div id="error-box" class="error-box" style="display:none;"></div>
+    </form>
+  </div>
+
+  <!-- Generated invoice preview (replaces the real system's PDF + email step) -->
+  <div id="invoice-screen" class="invoice-screen">
+    <div class="invoice-actions">
+      <button type="button" class="btn-print" id="btn-print" data-i18n="btn_print">🖨 PDF として保存／印刷</button>
+      <button type="button" class="btn-back" id="btn-back" data-i18n="btn_back">← フォームに戻る</button>
+    </div>
+    <div class="invoice" id="invoice"></div>
+  </div>
+
+  <script>
+  // ── i18n dictionary: ported from i18n.html + demo-only keys ──
+  const TRANSLATIONS = {
+    'ja-JP': { page_title:'請求書発行', intro:'{{COMPANY_NAME}}への請求書を発行するためのフォームです。送信内容は{{COMPANY_NAME}}事務局で確認後、PDFの請求書として発行されます。', section_residence:'居住地', residence_japan:'日本国内', residence_overseas:'日本国外', residence_note_japan:'消費税10%が加算されます。源泉所得税の適用可否は{{COMPANY_NAME}}側で判定します。', residence_note_overseas:'消費税・源泉所得税は非課税で発行されます。', section_personal:'あなたの情報', label_name:'氏名（本名）', label_address:'住所', label_phone:'電話番号', label_email:'メールアドレス', placeholder_name:'例：山田 太郎', placeholder_address:'例：東京都〇〇区〇〇1-2-3', placeholder_phone:'例：080-0000-0000', placeholder_email:'例：name@example.com', section_bank:'振込先口座', label_bank_name:'振込銀行名', label_branch_name:'支店名', label_account_name:'口座名義', label_account_number:'口座番号', placeholder_bank_name:'例：〇〇銀行', placeholder_branch_name:'例：〇〇支店', placeholder_account_name:'例：山田 太郎', placeholder_account_number:'例：1234567', section_invoice:'請求内容', label_currency:'通貨', label_items:'請求明細', item_name:'品名', item_quantity:'数量', item_unit_price:'単価', item_subtotal:'小計', item_remove:'削除', add_item:'＋ 明細を追加', placeholder_item_name:'例：〇〇制作料', section_notes:'備考（任意）', placeholder_notes:'伝えたいことがあれば記入してください', summary_subtotal:'小計', summary_consumption_tax:'消費税（10%）※日本国内のみ', summary_withholding_note:'※源泉所得税の適用可否は{{COMPANY_NAME}}事務局で判定いたします。', summary_estimated_total:'概算合計（税抜・小計のみ）', submit_button:'送信する', submitting:'送信中…', error_title:'送信エラー', error_required:'必須項目を入力してください', error_items_empty:'請求明細を1件以上入力してください', new_submission:'もう一件作成する',
+      demo_notice:'これは純フロントエンドのシミュレーションです。メール送信なし・シート書き込みなし・Google ログイン不要。データはブラウザ内のみ。', demo_withholding:'源泉徴収を適用してプレビュー（本番では担当者が後から判定）', submit_demo:'請求書プレビューを生成', btn_print:'🖨 PDF として保存／印刷', btn_back:'← フォームに戻る', inv_title:'請求書', inv_no:'請求書番号', inv_date:'発行日', inv_billto:'請求先', inv_issuer:'請求元', inv_amount_due:'ご請求金額', inv_subtotal:'小計', inv_consumption:'消費税（10%）', inv_withholding:'源泉所得税', inv_grand:'合計', inv_bank:'お振込先', inv_notes_overseas:'海外居住者の為非課税', inv_issuer_line1:'発行元：{{COMPANY_NAME}}', col_name:'品名', col_qty:'数量', col_price:'単価', col_amount:'金額' },
+    'en-US': { page_title:'Invoice Submission', intro:'This form submits an invoice request to {{COMPANY_NAME}}. After review, a PDF invoice will be generated.', section_residence:'Country of Residence', residence_japan:'In Japan', residence_overseas:'Outside Japan', residence_note_japan:'10% consumption tax will be added. Withholding tax applicability will be determined by {{COMPANY_NAME}}.', residence_note_overseas:'Consumption tax and withholding tax do not apply.', section_personal:'Your Information', label_name:'Full Name', label_address:'Address', label_phone:'Phone Number', label_email:'Email Address', placeholder_name:'e.g. John Smith', placeholder_address:'e.g. 123 Main Street, City, Country', placeholder_phone:'e.g. +1-555-000-0000', placeholder_email:'e.g. name@example.com', section_bank:'Bank Account', label_bank_name:'Bank Name', label_branch_name:'Branch Name', label_account_name:'Account Holder', label_account_number:'Account Number', placeholder_bank_name:'e.g. Bank Name', placeholder_branch_name:'e.g. Main Branch', placeholder_account_name:'e.g. John Smith', placeholder_account_number:'e.g. 1234567', section_invoice:'Invoice Details', label_currency:'Currency', label_items:'Items', item_name:'Item', item_quantity:'Qty', item_unit_price:'Unit Price', item_subtotal:'Subtotal', item_remove:'Remove', add_item:'+ Add Item', placeholder_item_name:'e.g. Service / Product Name', section_notes:'Notes (optional)', placeholder_notes:'Any additional information', summary_subtotal:'Subtotal', summary_consumption_tax:'Consumption Tax (10%) — Japan only', summary_withholding_note:'* Withholding tax applicability will be determined by {{COMPANY_NAME}}.', summary_estimated_total:'Estimated Total (subtotal only)', submit_button:'Submit', submitting:'Submitting…', error_title:'Submission Error', error_required:'Please fill in all required fields', error_items_empty:'Please add at least one item', new_submission:'Submit another',
+      demo_notice:'This is a pure front-end simulation: no email, no spreadsheet writes, no Google sign-in. Data stays in your browser.', demo_withholding:'Preview with withholding tax applied (in production the admin decides this later)', submit_demo:'Generate invoice preview', btn_print:'🖨 Save / print as PDF', btn_back:'← Back to form', inv_title:'INVOICE', inv_no:'Invoice No.', inv_date:'Issue date', inv_billto:'Bill to', inv_issuer:'From', inv_amount_due:'Amount due', inv_subtotal:'Subtotal', inv_consumption:'Consumption tax (10%)', inv_withholding:'Withholding tax', inv_grand:'Total', inv_bank:'Remit to', inv_notes_overseas:'Tax-exempt (overseas resident)', inv_issuer_line1:'Issued by: {{COMPANY_NAME}}', col_name:'Item', col_qty:'Qty', col_price:'Unit price', col_amount:'Amount' },
+    'zh-TW': { page_title:'請款單發行', intro:'本表單用於向{{COMPANY_NAME}}提交請款資訊。送出後由{{COMPANY_NAME}}事務局確認，自動產生PDF請款單。', section_residence:'居住地', residence_japan:'日本國內', residence_overseas:'日本國外', residence_note_japan:'會加上10%消費稅。源泉所得稅是否適用，由{{COMPANY_NAME}}判斷。', residence_note_overseas:'免徵消費稅與源泉所得稅。', section_personal:'您的個人資訊', label_name:'姓名（本名）', label_address:'地址', label_phone:'電話號碼', label_email:'電子郵件', placeholder_name:'例：王小明', placeholder_address:'例：台北市○○區○○路1-2-3號', placeholder_phone:'例：0900-000-000', placeholder_email:'例：name@example.com', section_bank:'匯款帳戶資訊', label_bank_name:'銀行名稱', label_branch_name:'分行名稱', label_account_name:'帳戶名稱', label_account_number:'帳號', placeholder_bank_name:'例：○○銀行', placeholder_branch_name:'例：○○分行', placeholder_account_name:'例：王小明', placeholder_account_number:'例：1234567', section_invoice:'請款內容', label_currency:'貨幣', label_items:'請款明細', item_name:'品名', item_quantity:'數量', item_unit_price:'單價', item_subtotal:'小計', item_remove:'刪除', add_item:'＋ 新增品項', placeholder_item_name:'例：○○製作費用', section_notes:'備註（選填）', placeholder_notes:'有任何想說明的事情請寫在這裡', summary_subtotal:'小計', summary_consumption_tax:'消費稅（10%）※僅日本國內', summary_withholding_note:'※源泉所得稅是否扣繳，由{{COMPANY_NAME}}判斷。', summary_estimated_total:'概估合計（僅小計）', submit_button:'送出', submitting:'傳送中…', error_title:'送出失敗', error_required:'請填寫必填欄位', error_items_empty:'請至少新增一筆明細', new_submission:'再建立一筆',
+      demo_notice:'這是純前端模擬：不寄信、不寫入任何試算表、不需登入 Google。資料只留在你的瀏覽器。', demo_withholding:'套用源泉所得稅預覽（正式環境由承辦人事後判定）', submit_demo:'產生請款單預覽', btn_print:'🖨 儲存／列印為 PDF', btn_back:'← 返回表單', inv_title:'請款單', inv_no:'請款單號', inv_date:'發行日', inv_billto:'請款對象', inv_issuer:'請款方', inv_amount_due:'請款金額', inv_subtotal:'小計', inv_consumption:'消費稅（10%）', inv_withholding:'源泉所得稅', inv_grand:'合計', inv_bank:'匯款帳戶', inv_notes_overseas:'海外居住者免稅', inv_issuer_line1:'發行單位：{{COMPANY_NAME}}', col_name:'品名', col_qty:'數量', col_price:'單價', col_amount:'金額' },
+    'es-ES': { page_title:'Emisión de Factura', intro:'Este formulario envía una solicitud de factura a {{COMPANY_NAME}}. Tras la revisión, se generará una factura en PDF.', section_residence:'País de Residencia', residence_japan:'En Japón', residence_overseas:'Fuera de Japón', residence_note_japan:'Se añadirá el 10% de impuesto al consumo. La aplicabilidad de la retención fiscal será determinada por {{COMPANY_NAME}}.', residence_note_overseas:'No se aplican el impuesto al consumo ni la retención fiscal.', section_personal:'Su Información', label_name:'Nombre Completo', label_address:'Dirección', label_phone:'Número de Teléfono', label_email:'Correo Electrónico', placeholder_name:'ej. Juan Pérez', placeholder_address:'ej. Calle Principal 123, Ciudad, País', placeholder_phone:'ej. +34-600-000-000', placeholder_email:'ej. nombre@example.com', section_bank:'Cuenta Bancaria', label_bank_name:'Nombre del Banco', label_branch_name:'Sucursal', label_account_name:'Titular de la Cuenta', label_account_number:'Número de Cuenta', placeholder_bank_name:'ej. Nombre del Banco', placeholder_branch_name:'ej. Sucursal Principal', placeholder_account_name:'ej. Juan Pérez', placeholder_account_number:'ej. 1234567', section_invoice:'Detalles de la Factura', label_currency:'Moneda', label_items:'Conceptos', item_name:'Concepto', item_quantity:'Cant.', item_unit_price:'Precio Unit.', item_subtotal:'Subtotal', item_remove:'Eliminar', add_item:'+ Añadir Concepto', placeholder_item_name:'ej. Servicio / Producto', section_notes:'Notas (opcional)', placeholder_notes:'Información adicional', summary_subtotal:'Subtotal', summary_consumption_tax:'Impuesto al Consumo (10%) — Solo Japón', summary_withholding_note:'* La aplicabilidad de la retención fiscal será determinada por {{COMPANY_NAME}}.', summary_estimated_total:'Total Estimado (solo subtotal)', submit_button:'Enviar', submitting:'Enviando…', error_title:'Error de Envío', error_required:'Por favor complete todos los campos obligatorios', error_items_empty:'Por favor añada al menos un concepto', new_submission:'Enviar otro',
+      demo_notice:'Esta es una simulación puramente de front-end: sin correos, sin escritura en hojas de cálculo, sin inicio de sesión de Google. Los datos permanecen en tu navegador.', demo_withholding:'Previsualizar con retención fiscal aplicada (en producción lo decide el administrador después)', submit_demo:'Generar vista previa de factura', btn_print:'🖨 Guardar / imprimir como PDF', btn_back:'← Volver al formulario', inv_title:'FACTURA', inv_no:'N.º de factura', inv_date:'Fecha de emisión', inv_billto:'Facturar a', inv_issuer:'De', inv_amount_due:'Importe a pagar', inv_subtotal:'Subtotal', inv_consumption:'Impuesto al consumo (10%)', inv_withholding:'Retención fiscal', inv_grand:'Total', inv_bank:'Pagar a', inv_notes_overseas:'Exento de impuestos (residente en el extranjero)', inv_issuer_line1:'Emitido por: {{COMPANY_NAME}}', col_name:'Concepto', col_qty:'Cant.', col_price:'Precio unit.', col_amount:'Importe' }
+  };
+
+  // Demo placeholder for the company that would run the real deployment.
+  const DEMO_COMPANY = { 'ja-JP':'株式会社デモ商会', 'en-US':'Demo Corp.', 'zh-TW':'示範股份有限公司', 'es-ES':'Demo Corp.' };
+  const DEMO_ADDRESS = '150-0001 東京都渋谷区神宮前0-0-0';
+  const WITHHOLDING_THRESHOLD = 1000000;
+
+  (function() {
+    const form = document.getElementById('invoice-form');
+    const langSelect = document.getElementById('lang-select');
+    const itemsContainer = document.getElementById('items-container');
+    const btnAddItem = document.getElementById('btn-add-item');
+    const btnSubmit = document.getElementById('btn-submit');
+    const errorBox = document.getElementById('error-box');
+    const residenceHint = document.getElementById('residence-hint');
+    const currencySelect = document.getElementById('currency-select');
+    const consumptionTaxRow = document.querySelector('.consumption-tax-row');
+    const whToggleWrap = document.getElementById('withholding-toggle-wrap');
+    const whToggle = document.getElementById('withholding-toggle');
+    const invoiceScreen = document.getElementById('invoice-screen');
+    const invoiceEl = document.getElementById('invoice');
+
+    function resolveLang(requested) {
+      if (!requested) return null;
+      if (TRANSLATIONS[requested]) return requested;
+      const prefix = String(requested).split('-')[0];
+      const matched = Object.keys(TRANSLATIONS).find(k => k === prefix || k.indexOf(prefix + '-') === 0);
+      return matched || null;
+    }
+    let currentLang = resolveLang(navigator.language) || 'ja-JP';
+
+    function company() { return DEMO_COMPANY[currentLang] || DEMO_COMPANY['en-US']; }
+    function fill(str) { return String(str || '').split('{{COMPANY_NAME}}').join(company()); }
+
+    function applyTranslations() {
+      const t = TRANSLATIONS[currentLang];
+      document.documentElement.lang = currentLang;
+      document.title = t.page_title + ' — seikyusho demo';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = fill(t[key]);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (t[key]) el.setAttribute('placeholder', fill(t[key]));
+      });
+      updateResidenceHint();
+      document.querySelectorAll('.item-remove').forEach(b => b.setAttribute('title', t.item_remove));
+    }
+
+    langSelect.value = currentLang;
+    langSelect.addEventListener('change', e => { currentLang = e.target.value; applyTranslations(); });
+
+    function selectedResidence() { const c = form.querySelector('input[name="residence"]:checked'); return c ? c.value : null; }
+
+    function updateResidenceHint() {
+      const t = TRANSLATIONS[currentLang];
+      const r = selectedResidence();
+      if (!r) { residenceHint.textContent = ''; consumptionTaxRow.style.display = 'none'; whToggleWrap.style.display = 'none'; }
+      else if (r === 'japan') { residenceHint.textContent = fill(t.residence_note_japan); consumptionTaxRow.style.display = 'flex'; whToggleWrap.style.display = 'flex'; }
+      else { residenceHint.textContent = fill(t.residence_note_overseas); consumptionTaxRow.style.display = 'none'; whToggleWrap.style.display = 'none'; whToggle.checked = false; }
+      recalculateTotal();
+    }
+    form.querySelectorAll('input[name="residence"]').forEach(r => r.addEventListener('change', updateResidenceHint));
+
+    function symbol() { const c = currencySelect.value; return c==='JPY'?'¥':c==='TWD'?'NT$ ':c==='USD'?'$ ':c==='EUR'?'€':''; }
+    // Mirrors formatCurrency_ in Code.gs (round + ja-JP grouping + symbol).
+    function formatCurrency(amount) { return symbol() + (Math.round(Number(amount)||0)).toLocaleString('ja-JP'); }
+
+    function createItemRow() {
+      const t = TRANSLATIONS[currentLang];
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML =
+        '<input type="text" name="itemName" placeholder="'+fill(t.placeholder_item_name)+'" required>' +
+        '<input type="number" name="itemQty" min="1" step="1" value="1" required>' +
+        '<input type="number" name="itemPrice" min="0" step="1" value="0" required>' +
+        '<div class="item-subtotal">0</div>' +
+        '<button type="button" class="item-remove" title="'+t.item_remove+'">×</button>';
+      row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalculateTotal));
+      row.querySelector('.item-remove').addEventListener('click', () => { if (itemsContainer.children.length > 1) { row.remove(); recalculateTotal(); } });
+      return row;
+    }
+
+    function readItems() {
+      const items = [];
+      itemsContainer.querySelectorAll('.item-row').forEach(row => {
+        const name = row.querySelector('[name="itemName"]').value.trim();
+        const qty = Number(row.querySelector('[name="itemQty"]').value);
+        const price = Number(row.querySelector('[name="itemPrice"]').value);
+        if (name && qty > 0) items.push({ name: name, quantity: qty, unitPrice: price });
+      });
+      return items;
+    }
+
+    function recalculateTotal() {
+      let subtotal = 0;
+      itemsContainer.querySelectorAll('.item-row').forEach(row => {
+        const qty = Number(row.querySelector('[name="itemQty"]').value) || 0;
+        const price = Number(row.querySelector('[name="itemPrice"]').value) || 0;
+        const sub = qty * price;
+        row.querySelector('.item-subtotal').textContent = formatCurrency(sub);
+        subtotal += sub;
+      });
+      document.getElementById('summary-subtotal').textContent = formatCurrency(subtotal);
+      const tax = selectedResidence() === 'japan' ? Math.floor(subtotal * 0.10) : 0;
+      document.getElementById('summary-tax').textContent = formatCurrency(tax);
+      document.getElementById('summary-total').textContent = formatCurrency(subtotal + tax);
+    }
+
+    btnAddItem.addEventListener('click', () => itemsContainer.appendChild(createItemRow()));
+    currencySelect.addEventListener('change', recalculateTotal);
+    whToggle.addEventListener('change', recalculateTotal);
+
+    itemsContainer.appendChild(createItemRow());
+    applyTranslations();
+
+    // ── Tax engine — mirrors generateInvoiceForRow / calculateWithholdingTax_ ──
+    function calcWithholding(amount) {
+      if (amount <= WITHHOLDING_THRESHOLD) return Math.floor(amount * 0.1021);
+      return Math.floor(WITHHOLDING_THRESHOLD * 0.1021 + (amount - WITHHOLDING_THRESHOLD) * 0.2042);
+    }
+    function invoiceNumber() {
+      const now = new Date();
+      const ym = '' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0');
+      const seq = (now.getDate() * 7 % 999) + 1; // demo seq — deterministic-ish, no persistence
+      return ym + '-' + String(seq).padStart(3, '0');
+    }
+    function issueDate() {
+      const d = new Date();
+      return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+    }
+
+    function buildInvoice(payload) {
+      const subtotal = payload.items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
+      const isJapan = payload.residence === 'japan';
+      const consumptionTax = isJapan ? Math.floor(subtotal * 0.10) : 0;
+      const withholdingApplied = isJapan && whToggle.checked;
+      const withholdingTax = withholdingApplied ? calcWithholding(subtotal) : 0;
+      const grandTotal = subtotal + consumptionTax - withholdingTax;
+      return { subtotal, consumptionTax, withholdingTax, grandTotal, isJapan, withholdingApplied };
+    }
+
+    function renderInvoice(payload, calc) {
+      const t = TRANSLATIONS[currentLang];
+      const rows = payload.items.map(it =>
+        '<tr><td>'+escapeHtml(it.name)+'</td><td class="num">'+it.quantity+'</td><td class="num">'+formatCurrency(it.unitPrice)+'</td><td class="num">'+formatCurrency(it.quantity*it.unitPrice)+'</td></tr>'
+      ).join('');
+
+      let summaryRows = '<div class="row"><span>'+t.inv_subtotal+'</span><span>'+formatCurrency(calc.subtotal)+'</span></div>';
+      if (calc.isJapan) summaryRows += '<div class="row"><span>'+t.inv_consumption+'</span><span>'+formatCurrency(calc.consumptionTax)+'</span></div>';
+      if (calc.withholdingApplied) summaryRows += '<div class="row"><span>'+t.inv_withholding+'</span><span>-'+formatCurrency(calc.withholdingTax)+'</span></div>';
+      summaryRows += '<div class="row grand"><span>'+t.inv_grand+'</span><span>'+formatCurrency(calc.grandTotal)+'</span></div>';
+
+      const notes = !calc.isJapan ? t.inv_notes_overseas : escapeHtml(payload.notes || '');
+
+      invoiceEl.innerHTML =
+        '<div class="inv-head">' +
+          '<h1>'+t.inv_title+'</h1>' +
+          '<div class="inv-meta"><div>'+t.inv_no+': <b>'+invoiceNumber()+'</b></div><div>'+t.inv_date+': '+issueDate()+'</div></div>' +
+        '</div>' +
+        '<div class="inv-parties">' +
+          '<div class="inv-party"><div class="lbl">'+t.inv_billto+'</div><div class="big">'+escapeHtml(company())+'</div><div>'+DEMO_ADDRESS+'</div></div>' +
+          '<div class="inv-party" style="text-align:right"><div class="lbl">'+t.inv_issuer+'</div><div class="big">'+escapeHtml(payload.name)+'</div><div>'+escapeHtml(payload.address)+'</div><div>'+escapeHtml(payload.phone)+'</div></div>' +
+        '</div>' +
+        '<div class="inv-total-band"><span class="lbl">'+t.inv_amount_due+'</span><span class="amt">'+formatCurrency(calc.grandTotal)+'</span></div>' +
+        '<table class="inv-items"><thead><tr><th>'+t.col_name+'</th><th class="num">'+t.col_qty+'</th><th class="num">'+t.col_price+'</th><th class="num">'+t.col_amount+'</th></tr></thead><tbody>'+rows+'</tbody></table>' +
+        '<div class="inv-summary">'+summaryRows+'</div>' +
+        '<div class="inv-bank"><div class="lbl">'+t.inv_bank+'</div>'+escapeHtml(payload.bankName)+' '+escapeHtml(payload.branchName)+' / '+escapeHtml(payload.accountName)+' / '+escapeHtml(payload.accountNumber)+'</div>' +
+        (notes ? '<div class="inv-notes">'+notes+'</div>' : '') +
+        '<div class="inv-footer">'+fill(t.inv_issuer_line1)+'<br>〒 '+DEMO_ADDRESS+'</div>';
+    }
+
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+      const t = TRANSLATIONS[currentLang];
+      const fd = new FormData(form);
+      const items = readItems();
+      if (items.length === 0) { showError(t.error_items_empty); return; }
+      const payload = {
+        residence: fd.get('residence'), name: (fd.get('name')||'').trim(), address: (fd.get('address')||'').trim(),
+        phone: (fd.get('phone')||'').trim(), email: (fd.get('email')||'').trim(),
+        bankName: (fd.get('bankName')||'').trim(), branchName: (fd.get('branchName')||'').trim(),
+        accountName: (fd.get('accountName')||'').trim(), accountNumber: (fd.get('accountNumber')||'').trim(),
+        currency: fd.get('currency'), items: items, notes: (fd.get('notes')||'').trim()
+      };
+      const required = ['residence','name','address','phone','email','bankName','branchName','accountName','accountNumber'];
+      for (const k of required) if (!payload[k]) { showError(t.error_required); return; }
+
+      const calc = buildInvoice(payload);
+      renderInvoice(payload, calc);
+      document.querySelector('.container').style.display = 'none';
+      invoiceScreen.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function showError(msg) { errorBox.textContent = msg; errorBox.style.display = 'block'; errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+
+    document.getElementById('btn-print').addEventListener('click', () => window.print());
+    document.getElementById('btn-back').addEventListener('click', () => {
+      invoiceScreen.style.display = 'none';
+      document.querySelector('.container').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
+  </script>
+
+  <!-- CVER OSS house package: zero-config iOS Safari chrome tinting. -->
+  <script type="module">import 'https://esm.sh/bleedblend@2.1.0/auto';</script>
+</body>
+</html>

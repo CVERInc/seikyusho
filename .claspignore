@@ -1,0 +1,13 @@
+# Push ONLY the Apps Script source to the GAS project.
+# Ignore everything first, then allow-list the real GAS files.
+# Without this, clasp would try to push docs/*.html (the static OSS landing +
+# demo) as HtmlService files and pollute the project.
+**/**
+
+!appsscript.json
+!Code.gs
+!Setup.gs
+!index.html
+!style.html
+!script.html
+!i18n.html

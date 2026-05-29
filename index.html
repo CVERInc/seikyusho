@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><?= companyNames['ja-JP'] || companyNames['en-US'] || 'Invoice' ?> 請求書発行</title>
   <?!= include('style'); ?>
   <?!= include('i18n'); ?>
@@ -166,5 +166,8 @@
     window.INITIAL_LANG = <?!= JSON.stringify(lang) ?>;
   </script>
   <?!= include('script'); ?>
+
+  <!-- CVER OSS house package: zero-config iOS Safari chrome tinting. -->
+  <script type="module">import 'https://esm.sh/bleedblend@2.1.0/auto';</script>
 </body>
 </html>
