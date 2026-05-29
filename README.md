@@ -83,19 +83,16 @@ Apps Script エディタで、本リポジトリの以下のファイルを 1:1 
 | `script.html` | 新規 HTML ファイル「script」 |
 | `i18n.html` | 新規 HTML ファイル「i18n」 |
 
-#### Step 3. 初期セットアップを実行
+#### Step 3. 初期セットアップを実行（1 関数で完了）
 
-1. 関数ドロップダウンから `runSetup` を選択 → 「**実行**」
-2. 初回は権限承認が必要（Drive / Sheet / Mail / Trigger 等のスコープ）
-3. 完了すると **Sheet が自動作成**され、Apps Script のスクリプトプロパティに `SPREADSHEET_ID` が保存される
+> 💡 **おすすめ：** 関数ドロップダウンから **`setup`** を選択 →「**実行**」するだけで、下記 Step 3〜4（Sheet 作成・トリガー配線・使い方シート生成）が**正しい順序で一括実行**されます（冪等・再実行可）。初回は権限承認が必要（Drive / Sheet / Mail / Trigger 等のスコープ）。完了後は Step 5 へ。
 
-#### Step 4. トリガーをインストール
+個別に実行したい場合のみ、順番に：
 
-順番に以下を実行：
-
-1. `installSheetMenuTrigger` → カスタムメニュー有効化
-2. `installStatusEditTrigger` → 承認/差戻/源泉適用変更の自動通知 trigger
-3. `populateUsageSheet` → 「使い方」シート自動生成
+1. `runSetup` → **Sheet が自動作成**され、スクリプトプロパティに `SPREADSHEET_ID` が保存される
+2. `installSheetMenuTrigger` → カスタムメニュー有効化
+3. `installStatusEditTrigger` → 承認/差戻/源泉適用変更の自動通知 trigger
+4. `populateUsageSheet` → 「使い方」シート自動生成
 
 #### Step 5. 「設定」シートに会社情報を入力
 
@@ -143,8 +140,7 @@ cd seikyusho
 clasp create --type standalone --title "請求書システム"
 clasp push -f
 
-# 残りは方法 A の Step 3 以降と同じ:
-# runSetup → installSheetMenuTrigger → installStatusEditTrigger → populateUsageSheet
+# Apps Script で setup() を1回実行（Step 3〜4 を一括）
 # 設定入力 → デプロイ → form_url 保存 → populateUsageSheet 再実行
 ```
 
@@ -323,19 +319,16 @@ Copy each file from this repo into the Apps Script editor (1:1):
 | `script.html` | New HTML file "script" |
 | `i18n.html` | New HTML file "i18n" |
 
-#### Step 3. Run initial setup
+#### Step 3. Run initial setup (one function does it all)
 
-1. Select `runSetup` from the function dropdown → **Run**
-2. Grant permissions on first run (Drive / Sheet / Mail / Trigger scopes)
-3. A spreadsheet is auto-created and `SPREADSHEET_ID` is saved to script properties
+> 💡 **Recommended:** Select **`setup`** from the function dropdown → **Run**. It runs Steps 3–4 below (create sheet, wire triggers, generate the usage sheet) **in the right order**, idempotently. Grant permissions on first run (Drive / Sheet / Mail / Trigger scopes), then skip to Step 5.
 
-#### Step 4. Install triggers
+Only if you prefer to run them individually:
 
-Run these in order:
-
-1. `installSheetMenuTrigger` — enables the custom menu
-2. `installStatusEditTrigger` — wires approval/rejection/withholding-change auto-handlers
-3. `populateUsageSheet` — generates the "Usage" sheet
+1. `runSetup` — a spreadsheet is auto-created and `SPREADSHEET_ID` is saved to script properties
+2. `installSheetMenuTrigger` — enables the custom menu
+3. `installStatusEditTrigger` — wires approval/rejection/withholding-change auto-handlers
+4. `populateUsageSheet` — generates the "Usage" sheet
 
 #### Step 5. Fill in company info in the "設定" (Settings) sheet
 
@@ -381,7 +374,7 @@ cd seikyusho
 clasp create --type standalone --title "Invoice System"
 clasp push -f
 
-# Then follow Option A from Step 3 onward
+# Then run setup() once in Apps Script (Steps 3–4), fill Settings, deploy as web app
 ```
 
 </details>
