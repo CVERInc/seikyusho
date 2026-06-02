@@ -175,6 +175,12 @@ function setupSubmissionsSheet_(ss) {
     .setAllowInvalid(false)
     .build();
   withholdingRange.setDataValidation(withholdingRule);
+
+  // 電話番号・口座番号は先頭の「0」が数値化で消えないよう、列をプレーンテキスト書式にする。
+  const phoneCol = SUBMISSION_COLUMNS.indexOf('電話番号') + 1;
+  const accountNumberCol = SUBMISSION_COLUMNS.indexOf('口座番号') + 1;
+  sheet.getRange(2, phoneCol, sheet.getMaxRows() - 1, 1).setNumberFormat('@');
+  sheet.getRange(2, accountNumberCol, sheet.getMaxRows() - 1, 1).setNumberFormat('@');
 }
 
 function setupSettingsSheet_(ss) {
@@ -255,8 +261,9 @@ function setupTemplateSheet_(ss, sheetName, options) {
     .setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID);
   sheet.getRange('C6').setValue('様').setFontSize(12).setHorizontalAlignment('left');
 
-  sheet.getRange('D6').setValue('住所：').setHorizontalAlignment('right');
-  sheet.getRange('E6').setValue('{{APPLICANT_ADDRESS}}').setHorizontalAlignment('left');
+  sheet.getRange('D6').setValue('住所：').setHorizontalAlignment('right').setVerticalAlignment('top');
+  sheet.getRange('E6').setValue('{{APPLICANT_ADDRESS}}').setHorizontalAlignment('left')
+    .setWrap(true).setVerticalAlignment('top');
 
   sheet.getRange('B8').setValue('振込銀行名：').setHorizontalAlignment('right').setFontWeight('bold');
   sheet.getRange('C8:C8').merge();
@@ -275,8 +282,8 @@ function setupTemplateSheet_(ss, sheetName, options) {
   sheet.getRange('C11').setValue('{{ACCOUNT_NUMBER}}');
   sheet.getRange('B11:C11').setBorder(false, false, true, false, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
 
-  sheet.getRange('D8').setValue('氏名：').setHorizontalAlignment('right').setFontWeight('bold');
-  sheet.getRange('E8').setValue('{{APPLICANT_NAME}}');
+  sheet.getRange('D8').setValue('氏名：').setHorizontalAlignment('right').setFontWeight('bold').setVerticalAlignment('top');
+  sheet.getRange('E8').setValue('{{APPLICANT_NAME}}').setWrap(true).setVerticalAlignment('top');
 
   sheet.getRange('D9').setValue('電話番号：').setHorizontalAlignment('right').setFontWeight('bold');
   sheet.getRange('E9').setValue('{{APPLICANT_PHONE}}');
@@ -311,6 +318,8 @@ function setupTemplateSheet_(ss, sheetName, options) {
 
   let nextRow = summaryStartRow + 1;
   if (options.withConsumptionTax) {
+    // 「消費税 10%」は表示用の既定値。PDF 生成時に fillTemplateValues_ が
+    // 設定シートの実際の消費税率へ自動補正するため、率を変えてもここは触れなくてよい。
     sheet.getRange(nextRow, 4).setValue('消費税 10%').setFontWeight('bold').setBackground('#d9ead3').setHorizontalAlignment('center');
     sheet.getRange(nextRow, 5).setValue('{{CONSUMPTION_TAX}}').setHorizontalAlignment('right');
     nextRow++;
