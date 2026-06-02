@@ -55,10 +55,9 @@ const SUBMISSION_COLUMNS = [
  * /exec URL を「設定」の form_url に貼り、populateUsageSheet() を再実行。
  */
 function setup() {
-  const url = runSetup();
+  const url = runSetup();              // runSetup 内で「使い方」シートも生成される
   installSheetMenuTrigger();
   installStatusEditTrigger();
-  populateUsageSheet();
   Logger.log('✅ seikyusho セットアップ完了 / setup complete.\n  ' + url +
     '\n  次へ / next: 「設定」シート記入 → Web アプリとしてデプロイ → form_url を保存。');
   return url;
@@ -69,6 +68,15 @@ function setup() {
  * スタンドアロンスクリプトでは simple trigger が起動しないため、installable trigger を使用する
  */
 function installSheetMenuTrigger() {
+  // 容器バインド（テンプレートのコピー）では simple onOpen が自動起動するため、
+  // installable な onOpen トリガーは不要。入れると onOpen が二重に走りメニューが重複する。
+  let active = null;
+  try { active = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) { active = null; }
+  if (active) {
+    Logger.log('バインド済み: simple onOpen が動作するため installable onOpen トリガーはスキップします。');
+    return;
+  }
+
   const ss = getMainSpreadsheet_();
 
   ScriptApp.getProjectTriggers().forEach(t => {
@@ -108,21 +116,33 @@ function installStatusEditTrigger() {
 
 function runSetup() {
   let ss;
-  const existingId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 
-  if (existingId) {
-    try {
-      ss = SpreadsheetApp.openById(existingId);
-      Logger.log('既存のスプレッドシートを使用: ' + ss.getUrl());
-    } catch (e) {
-      ss = null;
+  // 容器バインド（テンプレートを「コピーを作成」した副本）なら、
+  // 紐づくスプレッドシート自身を主シートにし、その ID を必ず書き込む。
+  // （コピー時に旧 ID が残っていても上書きするので、誤って master を指さない）
+  let active = null;
+  try { active = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) { active = null; }
+
+  if (active) {
+    ss = active;
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', active.getId());
+    Logger.log('バインド先のスプレッドシートを使用: ' + ss.getUrl());
+  } else {
+    // standalone（CLI / 手動デプロイ）: 従来どおり既存 ID を開くか新規作成
+    const existingId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+    if (existingId) {
+      try {
+        ss = SpreadsheetApp.openById(existingId);
+        Logger.log('既存のスプレッドシートを使用: ' + ss.getUrl());
+      } catch (e) {
+        ss = null;
+      }
     }
-  }
-
-  if (!ss) {
-    ss = SpreadsheetApp.create('請求書管理');
-    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
-    Logger.log('新規スプレッドシート作成: ' + ss.getUrl());
+    if (!ss) {
+      ss = SpreadsheetApp.create('請求書管理');
+      PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
+      Logger.log('新規スプレッドシート作成: ' + ss.getUrl());
+    }
   }
 
   setupSubmissionsSheet_(ss);
@@ -132,11 +152,34 @@ function runSetup() {
   setupTemplateSheet_(ss, SHEET_NAMES.TPL_WITH_WHT, { withConsumptionTax: true, withWithholdingTax: true });
   setupTemplateSheet_(ss, SHEET_NAMES.TPL_WITHOUT_WHT, { withConsumptionTax: true, withWithholdingTax: false });
 
-  const defaultSheet = ss.getSheetByName('シート1') || ss.getSheetByName('Sheet1');
-  if (defaultSheet) ss.deleteSheet(defaultSheet);
+  // 使い方ガイドも常に用意する（テンプレートを複製した副本にもそのまま入るように）
+  populateUsageSheet();
+
+  removeDefaultBlankSheets_(ss);
 
   Logger.log('セットアップ完了！\n  Spreadsheet URL: ' + ss.getUrl());
   return ss.getUrl();
+}
+
+/**
+ * 既定の空シートを言語非依存で削除する。
+ * 新規スプレッドシートの既定シート名は言語で変わる（日「シート1」/英「Sheet1」/
+ * 繁中「工作表1」/簡中「工作表1」/韓「시트1」…）。名前で決め打ちせず、
+ * 「自分たちのシート以外で空のもの」を削除することで全ロケールに対応する。
+ */
+function removeDefaultBlankSheets_(ss) {
+  const ours = [
+    SHEET_NAMES.SUBMISSIONS, SHEET_NAMES.SETTINGS, SHEET_NAMES.COUNTER,
+    SHEET_NAMES.TPL_OVERSEAS, SHEET_NAMES.TPL_WITH_WHT, SHEET_NAMES.TPL_WITHOUT_WHT,
+    '使い方'
+  ];
+  ss.getSheets().forEach(sh => {
+    if (ours.indexOf(sh.getName()) >= 0) return;        // 自分たちのシートは残す
+    // 空シートのみ削除（データのある利用者のシートには触れない）。最低1枚は残す。
+    if (sh.getLastRow() === 0 && ss.getSheets().length > 1) {
+      ss.deleteSheet(sh);
+    }
+  });
 }
 
 function setupSubmissionsSheet_(ss) {

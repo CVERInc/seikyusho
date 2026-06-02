@@ -1107,15 +1107,35 @@ function formatDate_(d) {
 /* ──────────────────── スプレッドシート起動時のメニュー ──────────────────── */
 
 function onOpen() {
+  // メニューは最優先で構築する（ここで例外が出ると「請求書」メニュー自体が消えるため）。
+  // 初回セットアップは runSetup ではなく setup() を呼ぶ（タブ生成＋ステータス編集トリガー設置まで一括）。
   SpreadsheetApp.getUi()
     .createMenu('請求書')
+    .addItem('🚀 初期セットアップ（最初に1回）', 'setup')
+    .addSeparator()
     .addItem('➡️ 選んだ行のPDFを生成', 'generateInvoiceForActiveRow')
     .addItem('🔄 選んだ行のPDFを再生成（複数行可）', 'regenerateSelectedInvoices')
     .addItem('✅ approved 全件PDF生成', 'generateAllApprovedInvoices')
     .addSeparator()
-    .addItem('⚠️ 初期セットアップ実行', 'runSetup')
     .addItem('❌ 全テストデータ削除', 'clearAllTestData')
     .addToUi();
+
+  // コピー直後など未設定の場合は、初期セットアップへ誘導するトーストを出す（best-effort）。
+  try {
+    if (!isConfigured_()) {
+      SpreadsheetApp.getActive().toast(
+        '「請求書」メニュー →「🚀 初期セットアップ」を1回実行してください。',
+        'ようこそ！まずはじめに', 10);
+    }
+  } catch (e) { /* simple trigger の制約等で失敗しても無視 */ }
+}
+
+/**
+ * 初期セットアップ済みか（SPREADSHEET_ID が設定されているか）を返す。
+ * テンプレートをコピーした直後はスクリプトプロパティが空なので false になる。
+ */
+function isConfigured_() {
+  return !!PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 }
 
 /**
