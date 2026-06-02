@@ -143,11 +143,14 @@
         <span data-en>Automate invoicing for contractors and freelancers. A multilingual form collects the request; numbering, tax, PDF generation, and approval emails all run on your own Google Workspace. No servers, no database.</span>
       </p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="demo/">
+        <a class="btn btn-primary" href="https://docs.google.com/spreadsheets/d/1kC6MI_DSrO3qaUD2kHs6oMMC54ImbMfsH-gPcduOy3w/copy" target="_blank" rel="noopener">
+          <span data-zh>Google スプレッドシートのコピーを作成</span><span data-en>Make a copy of the Google Sheet</span>
+        </a>
+        <a class="btn btn-ghost" href="demo/">
           <span data-zh>▶ ライブデモを試す</span><span data-en>▶ Try the live demo</span>
         </a>
         <a class="btn btn-ghost" href="#deploy">
-          <span data-zh>自分で導入する（BYOG）</span><span data-en>Deploy your own (BYOG)</span>
+          <span data-zh>導入手順</span><span data-en>How to deploy</span>
         </a>
       </div>
       <p class="demo-note">
@@ -201,7 +204,13 @@
       </div>
 
       <div class="step">
-        <div class="step-head"><span class="step-badge">A</span><h3><span data-zh>clasp で push（約 3 分）</span><span data-en>Push with clasp (~3 min)</span></h3></div>
+        <div class="step-head"><span class="step-badge">A</span><h3><span data-zh>Google スプレッドシートにコピー（いちばん簡単）</span><span data-en>Make a copy of the Google Sheet (easiest)</span></h3></div>
+        <p><span data-zh>ボタンを押すと、システム一式があなたの Drive にコピーされます。あとはメニューから「初期セットアップ」を 1 回実行するだけ。</span><span data-en>One click drops the whole system into your own Drive. Then run the one-time setup from the menu.</span></p>
+        <p style="margin-top:14px"><a class="btn btn-primary" href="https://docs.google.com/spreadsheets/d/1kC6MI_DSrO3qaUD2kHs6oMMC54ImbMfsH-gPcduOy3w/copy" target="_blank" rel="noopener"><span data-zh>Google スプレッドシートのコピーを作成</span><span data-en>Make a copy of the Google Sheet</span></a></p>
+      </div>
+
+      <div class="step">
+        <div class="step-head"><span class="step-badge">B</span><h3><span data-zh>clasp で push（約 3 分・上級者向け）</span><span data-en>Push with clasp (~3 min, advanced)</span></h3></div>
         <p><span data-zh>dev に慣れている人向け。clone して新しい Apps Script プロジェクトへ push し、セットアップ関数を 1 回実行するだけ。</span><span data-en>For the dev-comfortable. Clone, push into a fresh Apps Script project, then run one setup function.</span></p>
 <pre>npm install -g @google/clasp
 clasp login
@@ -214,7 +223,7 @@ clasp push -f
       </div>
 
       <div class="step">
-        <div class="step-head"><span class="step-badge">B</span><h3><span data-zh>手動コピペ（GAS 初心者向け）</span><span data-en>Manual copy/paste (GAS beginners)</span></h3></div>
+        <div class="step-head"><span class="step-badge">C</span><h3><span data-zh>手動コピペ（上級者向け）</span><span data-en>Manual copy/paste (advanced)</span></h3></div>
         <ol>
           <li><span data-zh>script.google.com で新規プロジェクトを作成</span><span data-en>Create a new project at script.google.com</span></li>
           <li><span data-zh>リポジトリの 7 ファイルを 1:1 でコピー</span><span data-en>Copy the repo's 7 files 1:1</span></li>
@@ -225,8 +234,8 @@ clasp push -f
       </div>
 
       <p class="reqs">
-        <span data-zh>必要なもの：Google アカウント（個人 / Workspace）· 通知用メールアドレス 1 件 · ブラウザ。詳細は <a href="https://github.com/CVERInc/seikyusho#-セットアップ手順" target="_blank" rel="noopener">README の導入手順</a> へ。</span>
-        <span data-en>Requirements: a Google account (personal/Workspace) · one notification email · a browser. Full guide in the <a href="https://github.com/CVERInc/seikyusho#-setup" target="_blank" rel="noopener">README</a>.</span>
+        <span data-zh>必要なもの：Google アカウント（個人 / Workspace）· 通知用メールアドレス 1 件 · ブラウザ。</span>
+        <span data-en>Requirements: a Google account (personal/Workspace) · one notification email · a browser.</span>
       </p>
     </div>
   </section>
