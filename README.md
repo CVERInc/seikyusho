@@ -60,8 +60,23 @@ Google Workspace の標準機能だけで完結し、外部サービス・サー
 
 ### 🚀 セットアップ手順
 
+導入は 3 通り。**いちばん簡単なのは「コピー」**。GitHub のソースから入れたい方（社内ポリシー等で第三者のシートを複製したくない場合）は、手動コピペ または clasp をどうぞ — どの方法でもデータ・PDF・メールはすべて**あなたの**アカウント内で完結します。
+
+<details open>
+<summary><b>🚀 方法 A: Google スプレッドシートにコピー（いちばん簡単・約 1 分）</b></summary>
+
+1. **[Google スプレッドシートのコピーを作成](https://docs.google.com/spreadsheets/d/1kC6MI_DSrO3qaUD2kHs6oMMC54ImbMfsH-gPcduOy3w/copy)** を開き「コピーを作成」→ システム一式があなたの Drive に入ります。
+2. コピーしたシートを開き、メニュー **「請求書 → 🚀 初期セットアップ（最初に1回）」** を実行 → 権限承認（Drive / Sheet / Mail / Trigger）。
+3. 「設定」シートに会社情報・通知先メールを記入。
+4. **「デプロイ → 新しいデプロイ → ウェブアプリ」**（実行：自分／アクセス：全員）→ `/exec` URL を「設定」の `form_url` に貼り、`populateUsageSheet` を再実行。
+5. フォーム URL を申請者へ共有。
+
+> 🔒 コピーされるコードは [GitHub](https://github.com/CVERInc/seikyusho) と同一の MIT ライセンス。第三者サーバーは経由しません。
+
+</details>
+
 <details>
-<summary><b>📦 方法 A: 手動コピペ（GAS 初心者向け、約 20 分）</b></summary>
+<summary><b>📦 方法 B: 手動コピペ（GitHub のソースから・GAS 初心者向け、約 20 分）</b></summary>
 
 #### Step 1. Apps Script プロジェクト作成
 
@@ -125,7 +140,7 @@ Apps Script エディタで、本リポジトリの以下のファイルを 1:1 
 </details>
 
 <details>
-<summary><b>⚡ 方法 B: clasp で自動 push（dev 慣れた人向け、約 5 分）</b></summary>
+<summary><b>⚡ 方法 C: clasp で GitHub から push（dev 慣れた人向け、約 5 分）</b></summary>
 
 ```bash
 # clasp インストール（初回のみ）
@@ -296,8 +311,23 @@ Built entirely on Google Workspace — no external services, servers, or databas
 
 ### 🚀 Setup
 
+Three ways to deploy. **The easiest is to copy.** Prefer to install from the GitHub source — e.g. company policy or you'd rather not copy a third party's Sheet? Use the manual or clasp path instead. Either way, your data, PDFs and emails stay entirely inside **your** account.
+
+<details open>
+<summary><b>🚀 Option A: Make a copy of the Google Sheet (easiest, ~1 min)</b></summary>
+
+1. Open **[Make a copy of the Google Sheet](https://docs.google.com/spreadsheets/d/1kC6MI_DSrO3qaUD2kHs6oMMC54ImbMfsH-gPcduOy3w/copy)** and click "Make a copy" — the whole system lands in your own Drive.
+2. Open your copy, then run the menu **"請求書 → 🚀 初期セットアップ（最初に1回）"** → authorize (Drive / Sheet / Mail / Trigger).
+3. Fill company info + notification email in the **設定** (Settings) sheet.
+4. **Deploy → New deployment → Web app** (Execute as: me / Access: anyone) → paste the `/exec` URL into `form_url` in Settings, then re-run `populateUsageSheet`.
+5. Share the form URL with applicants.
+
+> 🔒 The copied code is the same MIT-licensed code as on [GitHub](https://github.com/CVERInc/seikyusho) — no third-party server is involved.
+
+</details>
+
 <details>
-<summary><b>📦 Option A: Manual copy/paste (~20 min)</b></summary>
+<summary><b>📦 Option B: Manual copy/paste from the GitHub source (~20 min)</b></summary>
 
 #### Step 1. Create Apps Script project
 
@@ -360,7 +390,7 @@ Done 🎉
 </details>
 
 <details>
-<summary><b>⚡ Option B: Push via clasp (~5 min)</b></summary>
+<summary><b>⚡ Option C: Push via clasp from the GitHub source (~5 min)</b></summary>
 
 ```bash
 # Install clasp once
