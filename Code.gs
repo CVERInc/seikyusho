@@ -131,6 +131,9 @@ function forceTextCells_(sheet, rowNumber, colNameToValue) {
  * 【一回限りのメンテナンス】既存データの電話番号・口座番号を修復する。
  * エディタから関数を選んで手動実行する（末尾アンダースコアなし＝実行ドロップダウンに表示）。
  *
+ *  - 数式化セル（「+」始まりの国際電話番号・口座番号）: テキスト書式が無かった頃に
+ *    "+819…" 等が数式として取り込まれ #ERROR 化している。getFormula() で元の入力文字列を
+ *    取得し、先頭の "=" を外して文字列として復元する（「+」を正しく取り戻す）。
  *  - 電話番号: 数値で保存されている = 先頭ゼロが落ちている状態。先頭に "0" を補って文字列化する。
  *    （日本・台湾の電話番号は必ず 0 始まりのため、数値化で落ちた 1 桁を安全に復元できる）
  *  - 口座番号: 数値なら文字列化のみ。落ちたゼロの桁数は特定できないため自動補完はせず、
@@ -161,26 +164,47 @@ function fixExistingContactData() {
 
   const phoneFixes = [];
   const acctReview = [];
+  const formulaFixes = [];
+
+  // 「+」始まりの国際電話番号・口座番号は、テキスト書式が無かった頃の保存で
+  // 数式として取り込まれ #ERROR 化している。getFormula() は元の入力文字列
+  // (例: "=+819012345678") を返すため、先頭の "=" を外せば原文を安全に復元できる。
+  const recoverFormulaCell = (cell, row, label) => {
+    const formula = cell.getFormula();   // 数式でなければ空文字列
+    if (!formula) return false;
+    const restored = formula.replace(/^=/, '');
+    cell.setNumberFormat('@').setValue(restored);
+    formulaFixes.push('行' + row + ' ' + label + ': 数式化 ' + formula + ' → ' + restored);
+    return true;
+  };
+
   for (let row = 2; row <= lastRow; row++) {
     const pCell = sheet.getRange(row, phoneCol);
-    const pVal = pCell.getValue();
-    if (typeof pVal === 'number') {
-      const restored = '0' + String(pVal);
-      pCell.setNumberFormat('@').setValue(restored);
-      phoneFixes.push('行' + row + ': ' + pVal + ' → ' + restored);
+    // 先に数式(=「+」残骸)を復元。復元したら数値分岐へは進まない。
+    if (!recoverFormulaCell(pCell, row, '電話番号')) {
+      const pVal = pCell.getValue();
+      if (typeof pVal === 'number') {
+        const restored = '0' + String(pVal);
+        pCell.setNumberFormat('@').setValue(restored);
+        phoneFixes.push('行' + row + ': ' + pVal + ' → ' + restored);
+      }
     }
+
     const aCell = sheet.getRange(row, acctCol);
-    const aVal = aCell.getValue();
-    if (typeof aVal === 'number') {
-      const asText = String(aVal);
-      aCell.setNumberFormat('@').setValue(asText);
-      acctReview.push('行' + row + ': ' + asText + '（先頭ゼロが必要か要確認）');
+    if (!recoverFormulaCell(aCell, row, '口座番号')) {
+      const aVal = aCell.getValue();
+      if (typeof aVal === 'number') {
+        const asText = String(aVal);
+        aCell.setNumberFormat('@').setValue(asText);
+        acctReview.push('行' + row + ': ' + asText + '（先頭ゼロが必要か要確認）');
+      }
     }
   }
 
   const report =
     '✅ fixExistingContactData 完了\n\n' +
-    '電話番号 先頭ゼロ復元: ' + phoneFixes.length + ' 件\n' + (phoneFixes.join('\n') || '（なし）') +
+    '「+」等の数式化セル復元: ' + formulaFixes.length + ' 件\n' + (formulaFixes.join('\n') || '（なし）') +
+    '\n\n電話番号 先頭ゼロ復元: ' + phoneFixes.length + ' 件\n' + (phoneFixes.join('\n') || '（なし）') +
     '\n\n口座番号 文字列化: ' + acctReview.length + ' 件\n' + (acctReview.join('\n') || '（なし）');
   Logger.log(report);
   return report;
@@ -404,7 +428,9 @@ function generateInvoiceForRow(rowNumber, overrideInvoiceNo, options) {
   const pdfBlob = renderInvoicePDF_({
     templateName: templateName,
     invoiceNo: invoiceNo,
-    issueDate: formatDate_(new Date()),
+    // 作成日(=請求日)は申請の C 列「タイムスタンプ」を用いる。
+    // PDF を再生成しても日付が再生成日に動かないようにするため(会計要望)。
+    issueDate: formatDate_(resolveIssueDate_(getCol('タイムスタンプ'))),
     clientName: settings['company_name_ja-JP'] || 'Company',
     applicantName: getCol('氏名'),
     applicantAddress: getCol('住所'),
@@ -572,6 +598,31 @@ function test_taxCalculation() {
   return 'OK';
 }
 
+/**
+ * 作成日(請求日)解決ロジックの回帰テスト。Apps Script エディタから手動実行する。
+ * タイムスタンプ優先・不正値フォールバックを検証する（作成日が再生成日にずれない保証）。
+ */
+function test_resolveIssueDate() {
+  const assert = (cond, msg) => { if (!cond) throw new Error('FAIL: ' + msg); };
+  const fmt = d => Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy-MM-dd');
+
+  // 1. Date オブジェクトはそのまま使う（申請の C 列はフォームから Date で保存される）
+  const ts = new Date('2026-05-31T09:00:00+09:00');
+  assert(fmt(resolveIssueDate_(ts)) === '2026-05-31', 'Date passthrough');
+
+  // 2. 文字列の日付も解釈する（手入力・コピー行対策）
+  assert(fmt(resolveIssueDate_('2026-05-31T09:00:00+09:00')) === '2026-05-31', 'string date parsed');
+
+  // 3. 空欄・不正値は現在日時にフォールバック（落ちずに発行できる）
+  assert(resolveIssueDate_('') instanceof Date, 'empty → now');
+  assert(resolveIssueDate_(null) instanceof Date, 'null → now');
+  assert(resolveIssueDate_('not-a-date') instanceof Date, 'garbage → now');
+  assert(!isNaN(resolveIssueDate_(undefined).getTime()), 'undefined → valid now');
+
+  Logger.log('✅ test_resolveIssueDate: 全アサーション通過');
+  return 'OK';
+}
+
 /* ──────────────────── PDFレンダリング ──────────────────── */
 
 function renderInvoicePDF_(data) {
@@ -604,14 +655,17 @@ function renderInvoicePDF_(data) {
 function estimateWrappedLines_(availWidthPx, fontPt, text) {
   const fontPx = (fontPt || 10) * 1.33;          // pt → px 概算
   const cjk = /[ᄀ-￿]/;                // CJK・全角はフォント幅、その他は約半角
-  const usable = Math.max(availWidthPx - 8, 10);  // セル内パディングぶん控える
+  // セル内パディング＋プロポーショナルフォントの実測差ぶん、可用幅は控えめに見積もる。
+  // （広く見積もると 1 行あたりの想定文字数が増え、結果的に行数を過小評価＝末尾が切れる）
+  const usable = Math.max(availWidthPx - 12, 10);
   // 明示的な改行(\n)で行を分け、各行ごとに自動折り返し行数を加算する。
   // （\n を無視すると複数行テキスト＝備考などが大幅に過小評価され、末尾が切れる）
   let total = 0;
   String(text).split('\n').forEach(segment => {
+    if (segment.length === 0) { total += 1; return; }  // 空行も 1 行ぶん高さを取る
     let textPx = 0;
     for (let i = 0; i < segment.length; i++) {
-      textPx += cjk.test(segment[i]) ? fontPx : fontPx * 0.6;
+      textPx += cjk.test(segment[i]) ? fontPx : fontPx * 0.62;
     }
     total += Math.max(1, Math.ceil(textPx / usable));
   });
@@ -621,8 +675,10 @@ function estimateWrappedLines_(availWidthPx, fontPt, text) {
 function estimateWrappedHeight_(availWidthPx, fontPt, text) {
   const fontPx = (fontPt || 10) * 1.33;
   const lines = estimateWrappedLines_(availWidthPx, fontPt, text);
-  const lineHeightPx = Math.ceil(fontPx * 1.6) + 4;
-  return lines * lineHeightPx + 10;               // 上下の余白を多めに
+  const lineHeightPx = Math.ceil(fontPx * 1.7) + 5;
+  // 最終行が PDF で切れる事故を防ぐため、全体に余裕(+1 行ぶん＋上下マージン)を持たせる。
+  // PDF エクスポートは行高に収まらない折り返しテキストを overflow させず切り落とすため。
+  return (lines + 1) * lineHeightPx + 12;
 }
 
 /**
@@ -698,8 +754,10 @@ function fillTemplateValues_(sheet, data) {
 
   // 住所・氏名など、欄幅を超えると末尾が切れてしまう長文プレースホルダー。
   // 折り返しを有効化し、該当行の高さを内容に合わせて広げる（PDF切れ対策）。
+  // 申請者の入力情報は欄幅を超えると末尾が切れるため、原則すべて折り返し可能にする(会計要望⑤)。
+  // 口座番号(={{ACCOUNT_NUMBER}})だけは見栄え優先で別途 SHRINK 扱い(縮小→収まらなければ折り返し)。
   const WRAP_PLACEHOLDERS = [
-    '{{APPLICANT_ADDRESS}}', '{{APPLICANT_NAME}}',
+    '{{APPLICANT_ADDRESS}}', '{{APPLICANT_NAME}}', '{{APPLICANT_PHONE}}',
     '{{BANK_NAME}}', '{{BRANCH_NAME}}', '{{ACCOUNT_NAME}}', '{{NOTES}}',
     '{{ISSUER_LINE_1}}', '{{ISSUER_LINE_2}}', '{{ISSUER_LINE_3}}'
   ];
@@ -1102,6 +1160,23 @@ function formatCurrency_(amount, currency) {
 
 function formatDate_(d) {
   return Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy年M月d日');
+}
+
+/**
+ * 請求書の「作成日(=請求日)」に使う日付を解決する。
+ * 申請の C 列「タイムスタンプ」を請求日として用いることで、PDF を再生成しても
+ * 日付が再生成日に動かないようにする(会計要望)。
+ * セルが空・不正値の場合(手入力行など)のみ現在日時にフォールバックする。
+ * @param {Date|string|number} timestamp - 「タイムスタンプ」セルの値
+ * @returns {Date}
+ */
+function resolveIssueDate_(timestamp) {
+  if (timestamp instanceof Date && !isNaN(timestamp.getTime())) return timestamp;
+  if (timestamp) {
+    const d = new Date(timestamp);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
 }
 
 /* ──────────────────── スプレッドシート起動時のメニュー ──────────────────── */
