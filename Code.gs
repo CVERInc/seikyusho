@@ -752,19 +752,15 @@ function fillTemplateValues_(sheet, data) {
     '{{ISSUER_LINE_3}}': data.issuerLine3 || ''
   };
 
-  // 住所・氏名など、欄幅を超えると末尾が切れてしまう長文プレースホルダー。
-  // 折り返しを有効化し、該当行の高さを内容に合わせて広げる（PDF切れ対策）。
-  // 申請者の入力情報は欄幅を超えると末尾が切れるため、原則すべて折り返し可能にする(会計要望⑤)。
-  // 口座番号(={{ACCOUNT_NUMBER}})だけは見栄え優先で別途 SHRINK 扱い(縮小→収まらなければ折り返し)。
-  const WRAP_PLACEHOLDERS = [
+  // 固定レイアウト版: 申請者情報は折り返さず「1行・縮小表示(shrink-to-fit)」で固定枠に収める。
+  // これで孤字・左右ズレが出ず、どの請求書も同じ版面になる。住所は全幅セルなので長くても1行で収まりやすい。
+  const SHRINK_PLACEHOLDERS = [
     '{{APPLICANT_ADDRESS}}', '{{APPLICANT_NAME}}', '{{APPLICANT_PHONE}}',
-    '{{BANK_NAME}}', '{{BRANCH_NAME}}', '{{ACCOUNT_NAME}}', '{{NOTES}}',
-    '{{ISSUER_LINE_1}}', '{{ISSUER_LINE_2}}', '{{ISSUER_LINE_3}}'
+    '{{BANK_NAME}}', '{{BRANCH_NAME}}', '{{ACCOUNT_NAME}}', '{{ACCOUNT_NUMBER}}'
   ];
 
-  // 1 行に収めたい数字列（口座番号など）。折り返すと不格好なので、
-  // セル幅に収まるようフォントを縮小して 1 行表示する（shrink-to-fit）。
-  const SHRINK_PLACEHOLDERS = ['{{ACCOUNT_NUMBER}}'];
+  // 備考のみ固定枠内で折り返し（複数行可）。パディングは枠の行高で確保する。
+  const WRAP_PLACEHOLDERS = ['{{NOTES}}'];
 
   // 数字に見えるが「文字列」として表示すべきプレースホルダー。
   // setValues で General 書式のセルに "0987..." を書くと再び数値化され先頭ゼロが落ちるため、
@@ -814,42 +810,25 @@ function fillTemplateValues_(sheet, data) {
   // 折り返し後の実レイアウトを確定させてから行高を調整する。
   SpreadsheetApp.flush();
 
-  // 口座番号など 1 行で見せたい数字列:
-  // まず右隣の空セルへ広げて（合併）標準フォントを保ち、それでも収まらなければ縮小、
-  // 縮小の下限でも無理なら折り返しにフォールバックする。
+  // 情報欄: 固定枠なので折り返さず、1 行に収まるようフォントを縮小（下限 7pt）、縦中央で配置。
+  // 下限でも収まらない極端な長さのときだけ、最後の手段として折り返し可にする。
   shrinkCells.forEach(sc => {
-    // 右隣が空セルなら最大 2 列ぶんまで広げ、フォントを縮めずに済むようにする
-    let cols = 1;
-    while (cols < 3) {
-      const nb = values[sc.row - 1] ? values[sc.row - 1][sc.col - 1 + cols] : undefined;
-      if (nb === '' && !sheet.getRange(sc.row, sc.col + cols).isPartOfMerge()) cols++;
-      else break;
-    }
-    if (cols > 1) sheet.getRange(sc.row, sc.col, 1, cols).merge();
-
     const anchor = sheet.getRange(sc.row, sc.col);
     const block = mergedBlock_(sheet, sc.row, sc.col);
     let fontPt = 10;
     try { fontPt = anchor.getFontSize() || 10; } catch (e) {}
     const fit = fitFontOneLine_(block.width, sc.text, fontPt, 7);
-    anchor.setFontSize(fit.fits ? fit.pt : 7).setWrap(!fit.fits);
-    if (!fit.fits) {
-      anchor.setVerticalAlignment('top');
-      ensureBlockHeight_(sheet, block, estimateWrappedHeight_(block.width, 7, sc.text));
-    }
+    anchor.setFontSize(fit.pt).setVerticalAlignment('middle').setWrap(!fit.fits);
   });
 
-  // 折り返しセル: 実際に複数行になるものだけ行高を確保し、値とラベル(左隣)を上揃えにする。
-  // 単一行で収まるものは既定のまま（=ラベルと同じ下揃え）にして「値だけ浮く」のを防ぐ。
+  // 備考: 折り返し・上揃え。内容に合わせて枠の高さを確保し、長文でも切れないようにする
+  // （固定高だと長い備考の末尾が PDF で切り落とされるため）。
   wrapCells.forEach(wc => {
     const block = mergedBlock_(sheet, wc.row, wc.col);
     let fontPt = 10;
     try { fontPt = sheet.getRange(wc.row, wc.col).getFontSize() || 10; } catch (e) {}
-    if (estimateWrappedLines_(block.width, fontPt, wc.text) >= 2) {
-      sheet.getRange(wc.row, wc.col).setVerticalAlignment('top');
-      if (wc.col > 1) sheet.getRange(wc.row, wc.col - 1).setVerticalAlignment('top'); // ラベルも上揃え
-      ensureBlockHeight_(sheet, block, estimateWrappedHeight_(block.width, fontPt, wc.text));
-    }
+    sheet.getRange(wc.row, wc.col).setVerticalAlignment('top').setWrap(true);
+    ensureBlockHeight_(sheet, block, estimateWrappedHeight_(block.width, fontPt, wc.text));
   });
 
   const itemTable = findItemTablePosition_(sheet);
@@ -864,19 +843,23 @@ function fillTemplateValues_(sheet, data) {
       (data.items.length - itemTable.totalItemRows) + ' 件が PDF に表示されません。');
   }
 
-  const nameWidth = sheet.getColumnWidth(itemTable.nameCol);
+  // 品名は B:C 合併セル。合併幅で折り返し行数を見積もり、長ければ複数行＋行高を確保する。
+  // 単一行なら縦中央、複数行なら上揃え（数量・単価・金額も揃える）。
+  const nameBlock = mergedBlock_(sheet, itemTable.itemStartRow, itemTable.nameCol);
+  const nameWidth = nameBlock.width;
   for (let i = 0; i < usedRows; i++) {
     const it = data.items[i];
     const row = itemTable.itemStartRow + i;
-    // 品名は長いと欄幅で切れるため折り返し、必要なら行高を確保する
-    sheet.getRange(row, itemTable.nameCol).setValue(it.name).setWrap(true).setVerticalAlignment('top');
-    sheet.getRange(row, itemTable.qtyCol).setValue(it.quantity);
-    sheet.getRange(row, itemTable.priceCol).setValue(formatCurrency_(it.unitPrice, data.currency));
-    sheet.getRange(row, itemTable.amountCol).setValue(formatCurrency_(it.quantity * it.unitPrice, data.currency));
-    if (estimateWrappedLines_(nameWidth, 10, String(it.name)) >= 2) {
+    const multiline = estimateWrappedLines_(nameWidth, 10, String(it.name)) >= 2;
+    const valign = multiline ? 'top' : 'middle';
+    sheet.getRange(row, itemTable.nameCol).setValue(it.name).setWrap(true).setVerticalAlignment(valign);
+    sheet.getRange(row, itemTable.qtyCol).setValue(it.quantity).setVerticalAlignment(valign);
+    sheet.getRange(row, itemTable.priceCol).setValue(formatCurrency_(it.unitPrice, data.currency)).setVerticalAlignment(valign);
+    sheet.getRange(row, itemTable.amountCol).setValue(formatCurrency_(it.quantity * it.unitPrice, data.currency)).setVerticalAlignment(valign);
+    if (multiline) {
       ensureBlockHeight_(
         sheet,
-        { topRow: row, numRows: 1, leftCol: itemTable.nameCol, numCols: 1, width: nameWidth },
+        { topRow: row, numRows: 1, leftCol: itemTable.nameCol, numCols: nameBlock.numCols, width: nameWidth },
         estimateWrappedHeight_(nameWidth, 10, String(it.name))
       );
     }

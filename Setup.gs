@@ -273,125 +273,154 @@ function setupCounterSheet_(ss) {
 }
 
 /**
- * テンプレートシート作成
- * 既存のPDFひな形のレイアウトをGoogle Sheetsで再現
+ * テンプレートシート作成（固定レイアウト版）
+ *
+ * 設計方針: 申請者情報は「固定枠＋1行縮小表示」で、内容が長くても折り返さず
+ * フォントを縮めて収める（孤字・左右ズレを防止し、どの請求書も同じ版面になる）。
+ * 住所だけは全幅1行を割り当て、長い日本語住所も1行で収まるようにする。
+ * 明細の品名のみ、長ければ折り返して複数行（パディングは行高で確保）。
+ *
+ * 共有列: A/G=余白、B(ラベル/品名左)・C(値/品名右)・D(ラベル2/数量)・E(値2/単価)・F(値2/金額)。
  */
 function setupTemplateSheet_(ss, sheetName, options) {
   let sheet = ss.getSheetByName(sheetName);
   if (sheet) ss.deleteSheet(sheet);
   sheet = ss.insertSheet(sheetName);
-
   sheet.setHiddenGridlines(true);
 
-  sheet.setColumnWidth(1, 30);
-  sheet.setColumnWidth(2, 280);
-  sheet.setColumnWidth(3, 80);
-  sheet.setColumnWidth(4, 110);
-  sheet.setColumnWidth(5, 130);
-  sheet.setColumnWidth(6, 30);
+  const GREEN = '#1f8e3d';
+  const LIGHT = '#e8f5e9';
+  const HEAD = '#d9ead3';
+  const SOLID = SpreadsheetApp.BorderStyle.SOLID;
 
-  sheet.getRange('B2:E2').merge();
-  sheet.getRange('B2').setValue('請求書')
-    .setFontSize(28).setFontWeight('bold').setHorizontalAlignment('left');
+  sheet.setColumnWidth(1, 24);   // A 左余白
+  sheet.setColumnWidth(2, 100);  // B ラベル / 品名(左半)
+  sheet.setColumnWidth(3, 210);  // C 値   / 品名(右半)
+  sheet.setColumnWidth(4, 80);   // D ラベル2 / 数量
+  sheet.setColumnWidth(5, 100);  // E 値2 / 単価
+  sheet.setColumnWidth(6, 120);  // F 値2 / 金額
+  sheet.setColumnWidth(7, 24);   // G 右余白
 
-  sheet.getRange('D3').setValue('作成日：').setHorizontalAlignment('right');
-  sheet.getRange('E3').setValue('{{ISSUE_DATE}}').setHorizontalAlignment('left');
-  sheet.getRange('D4').setValue('NO：').setHorizontalAlignment('right');
-  sheet.getRange('E4').setValue('{{INVOICE_NO}}').setHorizontalAlignment('left');
+  // ── タイトル＋発行情報 ──
+  sheet.getRange('B2:C2').merge();
+  sheet.getRange('B2').setValue('請求書').setFontSize(26).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
+  sheet.getRange('E2').setValue('作成日：').setHorizontalAlignment('right').setVerticalAlignment('middle');
+  sheet.getRange('F2').setValue('{{ISSUE_DATE}}').setHorizontalAlignment('left').setVerticalAlignment('middle');
+  sheet.getRange('E3').setValue('NO：').setHorizontalAlignment('right').setVerticalAlignment('middle');
+  sheet.getRange('F3').setValue('{{INVOICE_NO}}').setHorizontalAlignment('left').setVerticalAlignment('middle');
+  sheet.setRowHeight(2, 40);
+  sheet.setRowHeight(3, 24);
 
-  sheet.getRange('B6').setValue('{{CLIENT_NAME}}')
-    .setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center')
-    .setBorder(false, false, true, false, false, false, '#000000', SpreadsheetApp.BorderStyle.SOLID);
-  sheet.getRange('C6').setValue('様').setFontSize(12).setHorizontalAlignment('left');
+  // ── 宛先 ──
+  sheet.getRange('B5:F5').merge();
+  sheet.getRange('B5').setValue('{{CLIENT_NAME}}　様')
+    .setFontSize(14).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  // 枠線は合併範囲全体に対して設定する（アンカー単一セルに掛けると下端＝合併内部になり描画されない）
+  sheet.getRange('B5:F5').setBorder(false, false, true, false, false, false, '#000000', SOLID);
+  sheet.setRowHeight(5, 36);
+  sheet.setRowHeight(6, 12);  // spacer
 
-  sheet.getRange('D6').setValue('住所：').setHorizontalAlignment('right').setVerticalAlignment('top');
-  sheet.getRange('E6').setValue('{{APPLICANT_ADDRESS}}').setHorizontalAlignment('left')
-    .setWrap(true).setVerticalAlignment('top');
+  // ── 申請者情報（住所は全幅1行、その他は整列グリッド・縦中央）──
+  const label = (a1, text) => sheet.getRange(a1).setValue(text)
+    .setHorizontalAlignment('right').setFontWeight('bold').setVerticalAlignment('middle');
+  const value = (a1, text) => sheet.getRange(a1).setValue(text)
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
 
-  sheet.getRange('B8').setValue('振込銀行名：').setHorizontalAlignment('right').setFontWeight('bold');
-  sheet.getRange('C8:C8').merge();
-  sheet.getRange('B8:C8').setBorder(false, false, true, false, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
-  sheet.getRange('C8').setValue('{{BANK_NAME}}');
+  label('B7', '住所：');     sheet.getRange('C7:F7').merge(); value('C7', '{{APPLICANT_ADDRESS}}');
+  label('B8', '氏名：');     value('C8', '{{APPLICANT_NAME}}');
+  label('D8', '電話番号：'); sheet.getRange('E8:F8').merge(); value('E8', '{{APPLICANT_PHONE}}');
+  label('B9', '振込銀行：'); value('C9', '{{BANK_NAME}}');
+  label('D9', '支店：');     sheet.getRange('E9:F9').merge(); value('E9', '{{BRANCH_NAME}}');
+  label('B10', '口座名義：'); value('C10', '{{ACCOUNT_NAME}}');
+  label('D10', '口座番号：'); sheet.getRange('E10:F10').merge(); value('E10', '{{ACCOUNT_NUMBER}}');
+  for (let r = 7; r <= 10; r++) sheet.setRowHeight(r, 30);
+  sheet.getRange('B10:F10').setBorder(false, false, true, false, false, false, GREEN, SOLID);
+  sheet.setRowHeight(11, 14);  // spacer
 
-  sheet.getRange('B9').setValue('支店名：').setHorizontalAlignment('right').setFontWeight('bold');
-  sheet.getRange('C9').setValue('{{BRANCH_NAME}}');
-  sheet.getRange('B9:C9').setBorder(false, false, true, false, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
+  // ── 案内文 ──
+  sheet.getRange('B12').setValue('下記の通りご請求申し上げます').setFontSize(11).setVerticalAlignment('middle');
+  sheet.setRowHeight(12, 24);
 
-  sheet.getRange('B10').setValue('口座名義：').setHorizontalAlignment('right').setFontWeight('bold');
-  sheet.getRange('C10').setValue('{{ACCOUNT_NAME}}');
-  sheet.getRange('B10:C10').setBorder(false, false, true, false, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
+  // ── 明細表ヘッダー ──
+  const tableStartRow = 13;
+  sheet.getRange('B13:C13').merge();
+  sheet.getRange('B13').setValue('品名').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.getRange('D13').setValue('数量').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.getRange('E13').setValue('単価').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.getRange('F13').setValue('金額').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  sheet.getRange('B13:F13').setBackground(GREEN).setFontColor('#ffffff').setFontWeight('bold');
+  sheet.setRowHeight(13, 28);
 
-  sheet.getRange('B11').setValue('口座番号：').setHorizontalAlignment('right').setFontWeight('bold');
-  sheet.getRange('C11').setValue('{{ACCOUNT_NUMBER}}');
-  sheet.getRange('B11:C11').setBorder(false, false, true, false, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
-
-  sheet.getRange('D8').setValue('氏名：').setHorizontalAlignment('right').setFontWeight('bold').setVerticalAlignment('top');
-  sheet.getRange('E8').setValue('{{APPLICANT_NAME}}').setWrap(true).setVerticalAlignment('top');
-
-  sheet.getRange('D9').setValue('電話番号：').setHorizontalAlignment('right').setFontWeight('bold');
-  sheet.getRange('E9').setValue('{{APPLICANT_PHONE}}');
-
-  sheet.getRange('B14').setValue('下記の通りご請求申し上げます').setFontSize(11);
-
-  sheet.getRange('B15').setValue('当月請求額').setFontWeight('bold')
-    .setBackground('#d9ead3').setHorizontalAlignment('center');
-  sheet.getRange('B16').setValue('{{TOTAL_AMOUNT}}')
-    .setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center')
-    .setBackground('#ffffff')
-    .setBorder(true, true, true, true, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
-
-  const tableStartRow = 18;
-  sheet.getRange(tableStartRow, 2, 1, 4).setValues([['品名', '数量', '単価', '金額']])
-    .setBackground('#1f8e3d').setFontColor('#ffffff').setFontWeight('bold')
-    .setHorizontalAlignment('center');
-
-  const totalItemRows = 27;
+  // ── 明細行（最大 20 行ぶん用意。生成時に使用ぶんだけ表示し残りは hideRows で隠す。品名は B:C 合併で広く）──
+  const totalItemRows = 20;
   for (let i = 0; i < totalItemRows; i++) {
     const row = tableStartRow + 1 + i;
-    sheet.getRange(row, 1).setValue(i + 1).setHorizontalAlignment('center').setFontColor('#666666').setFontSize(9);
-    sheet.getRange(row, 2, 1, 4).setBackground(i % 2 === 0 ? '#e8f5e9' : '#ffffff');
-    sheet.getRange(row, 3).setHorizontalAlignment('right');
-    sheet.getRange(row, 4).setHorizontalAlignment('right');
-    sheet.getRange(row, 5).setHorizontalAlignment('right');
+    sheet.getRange(row, 2, 1, 2).merge();  // B:C 品名
+    sheet.getRange(row, 2, 1, 5).setBackground(i % 2 === 0 ? LIGHT : '#ffffff');
+    sheet.getRange(row, 2).setHorizontalAlignment('left').setVerticalAlignment('middle');
+    sheet.getRange(row, 4).setHorizontalAlignment('center').setVerticalAlignment('middle');
+    sheet.getRange(row, 5).setHorizontalAlignment('right').setVerticalAlignment('middle');
+    sheet.getRange(row, 6).setHorizontalAlignment('right').setVerticalAlignment('middle');
+    sheet.setRowHeight(row, 26);
   }
 
-  const summaryStartRow = tableStartRow + 1 + totalItemRows;
-  sheet.getRange(summaryStartRow, 4).setValue('小計').setFontWeight('bold').setBackground('#d9ead3').setHorizontalAlignment('center');
-  sheet.getRange(summaryStartRow, 5).setValue('{{SUBTOTAL}}').setHorizontalAlignment('right');
+  // ── 合計欄（明細表の直後。ラベルは D:E 合併、値は F）──
+  let r = tableStartRow + 1 + totalItemRows;
+  const putTotal = (text, valueCell, emphasize) => {
+    sheet.getRange(r, 4, 1, 2).merge();
+    sheet.getRange(r, 4).setValue(text).setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setFontWeight('bold').setBackground(emphasize ? GREEN : HEAD).setFontColor(emphasize ? '#ffffff' : '#000000');
+    const v = sheet.getRange(r, 6).setValue(valueCell).setHorizontalAlignment('right').setVerticalAlignment('middle');
+    if (emphasize) v.setFontWeight('bold').setBorder(true, true, true, true, false, false, GREEN, SOLID);
+    sheet.setRowHeight(r, 26);
+    r++;
+  };
+  putTotal('小計', '{{SUBTOTAL}}', false);
+  // 「消費税 N%」ラベルは PDF 生成時に実際の税率へ自動補正される（fillTemplateValues_）。
+  putTotal(options.withConsumptionTax ? '消費税 10%' : '消費税 0%',
+           options.withConsumptionTax ? '{{CONSUMPTION_TAX}}' : '0', false);
+  if (options.withWithholdingTax) putTotal('源泉所得税', '{{WITHHOLDING_TAX}}', false);
+  putTotal('合計', '{{GRAND_TOTAL}}', true);
 
-  let nextRow = summaryStartRow + 1;
-  if (options.withConsumptionTax) {
-    // 「消費税 10%」は表示用の既定値。PDF 生成時に fillTemplateValues_ が
-    // 設定シートの実際の消費税率へ自動補正するため、率を変えてもここは触れなくてよい。
-    sheet.getRange(nextRow, 4).setValue('消費税 10%').setFontWeight('bold').setBackground('#d9ead3').setHorizontalAlignment('center');
-    sheet.getRange(nextRow, 5).setValue('{{CONSUMPTION_TAX}}').setHorizontalAlignment('right');
-    nextRow++;
-  } else {
-    sheet.getRange(nextRow, 4).setValue('消費税 0%').setFontWeight('bold').setBackground('#d9ead3').setHorizontalAlignment('center');
-    sheet.getRange(nextRow, 5).setValue('0').setHorizontalAlignment('right');
-    nextRow++;
-  }
+  // ── 備考（固定高の枠・折り返し可）──
+  const noteLabelRow = r + 1;
+  sheet.getRange(noteLabelRow, 2).setValue('備考：').setFontWeight('bold').setVerticalAlignment('middle');
+  sheet.setRowHeight(noteLabelRow, 24);
+  const noteBoxRow = noteLabelRow + 1;
+  const noteBox = sheet.getRange(noteBoxRow, 2, 4, 5);  // B:F × 4 行
+  noteBox.merge();
+  // 枠線は合併範囲全体に掛ける（アンカー単一セルだと下・右が合併内部になり描画されない）
+  noteBox.setBorder(true, true, true, true, false, false, GREEN, SOLID);
+  sheet.getRange(noteBoxRow, 2).setValue('{{NOTES}}')
+    .setVerticalAlignment('top').setHorizontalAlignment('left').setWrap(true);
+  for (let k = 0; k < 4; k++) sheet.setRowHeight(noteBoxRow + k, 22);
 
-  if (options.withWithholdingTax) {
-    sheet.getRange(nextRow, 4).setValue('源泉所得税').setFontWeight('bold').setBackground('#d9ead3').setHorizontalAlignment('center');
-    sheet.getRange(nextRow, 5).setValue('{{WITHHOLDING_TAX}}').setHorizontalAlignment('right');
-    nextRow++;
-  }
+  // ── 発行元（B:F 全幅・小さめ）──
+  let ir = noteBoxRow + 5;
+  ['{{ISSUER_LINE_1}}', '{{ISSUER_LINE_2}}', '{{ISSUER_LINE_3}}'].forEach(ph => {
+    sheet.getRange(ir, 2, 1, 5).merge();
+    sheet.getRange(ir, 2).setValue(ph).setFontSize(9).setFontColor('#666666').setVerticalAlignment('middle');
+    ir++;
+  });
+}
 
-  sheet.getRange(nextRow, 4).setValue('合計').setFontWeight('bold').setBackground('#1f8e3d').setFontColor('#ffffff').setHorizontalAlignment('center');
-  sheet.getRange(nextRow, 5).setValue('{{GRAND_TOTAL}}').setFontWeight('bold').setHorizontalAlignment('right')
-    .setBorder(true, true, true, true, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
-
-  const noteRow = nextRow + 3;
-  sheet.getRange(noteRow, 2).setValue('備考：').setFontWeight('bold');
-  sheet.getRange(noteRow + 1, 2, 5, 4).merge();
-  sheet.getRange(noteRow + 1, 2).setValue('{{NOTES}}')
-    .setVerticalAlignment('top').setHorizontalAlignment('left').setWrap(true)
-    .setBorder(true, true, true, true, false, false, '#1f8e3d', SpreadsheetApp.BorderStyle.SOLID);
-
-  sheet.getRange(noteRow + 8, 2).setValue('{{ISSUER_LINE_1}}').setFontSize(9).setFontColor('#666666');
-  sheet.getRange(noteRow + 9, 2).setValue('{{ISSUER_LINE_2}}').setFontSize(9).setFontColor('#666666');
-  sheet.getRange(noteRow + 10, 2).setValue('{{ISSUER_LINE_3}}').setFontSize(9).setFontColor('#666666');
+/**
+ * 【メンテナンス】PDF テンプレート（TPL_海外 / TPL_源泉あり / TPL_源泉なし）の 3 枚だけを
+ * 最新レイアウトで作り直す。申請データ・設定・カウンター・使い方シートには一切触れない。
+ * 版面リニューアルを既存の運用コピーへ反映するため、エディタから手動実行する
+ * （末尾アンダースコアなし＝実行ドロップダウンに表示）。
+ */
+function rebuildTemplates() {
+  const ss = getMainSpreadsheet_();
+  setupTemplateSheet_(ss, SHEET_NAMES.TPL_OVERSEAS, { withConsumptionTax: false, withWithholdingTax: false });
+  setupTemplateSheet_(ss, SHEET_NAMES.TPL_WITH_WHT, { withConsumptionTax: true, withWithholdingTax: true });
+  setupTemplateSheet_(ss, SHEET_NAMES.TPL_WITHOUT_WHT, { withConsumptionTax: true, withWithholdingTax: false });
+  const msg = '✅ テンプレート3種を最新レイアウトで再生成しました（申請データ・設定・カウンターは変更なし）。';
+  Logger.log(msg);
+  try { SpreadsheetApp.getActive().toast(msg, 'rebuildTemplates 完了', 8); } catch (e) {}
+  return msg;
 }
 
 function getMainSpreadsheet_() {
