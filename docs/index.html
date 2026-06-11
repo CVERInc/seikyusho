@@ -30,6 +30,10 @@
       --surface-2: rgba(255, 255, 255, 0.09);
       --border: rgba(182, 240, 198, 0.18);
       --code-bg: rgba(4, 26, 13, 0.7);
+      /* Continuous-curvature (squircle) corners. Progressive enhancement:
+         corner-shape is Chromium-only as of mid-2026; Safari/Firefox ignore it
+         and keep the border-radius arc, so there is zero visual regression. */
+      --corner: squircle;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -64,7 +68,7 @@
     .tagline { font-size: clamp(1.1rem, 3vw, 1.55rem); font-weight: 700; color: var(--mint); margin-bottom: 14px; }
     .sub { font-size: 1.05rem; color: var(--text-dim); max-width: 640px; margin: 0 auto 10px; }
     .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
-    .btn { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; font-weight: 700; font-size: 1rem; padding: 14px 26px; border-radius: 14px; transition: all 0.2s ease; border: 1px solid transparent; }
+    .btn { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; font-weight: 700; font-size: 1rem; padding: 14px 26px; border-radius: 14px; corner-shape: var(--corner); transition: all 0.2s ease; border: 1px solid transparent; }
     .btn-primary { background: var(--mint); color: var(--deep); box-shadow: 0 8px 28px rgba(182, 240, 198, 0.28); }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 34px rgba(182, 240, 198, 0.4); }
     .btn-ghost { background: var(--surface); color: #fff; border-color: var(--border); }
@@ -77,7 +81,7 @@
     .section-lead { text-align: center; color: var(--text-dim); max-width: 640px; margin: 0 auto 36px; }
 
     .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: all 0.2s ease; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; corner-shape: var(--corner); padding: 24px; transition: all 0.2s ease; }
     .card:hover { background: var(--surface-2); transform: translateY(-3px); }
     .card .ic { font-size: 1.6rem; margin-bottom: 12px; }
     .card h3 { font-family: 'Comfortaa', cursive; font-weight: 600; font-size: 1.05rem; color: #fff; margin-bottom: 7px; }
@@ -85,24 +89,24 @@
 
     /* Flow */
     .flow { max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
-    .flow-step { display: flex; gap: 16px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+    .flow-step { display: flex; gap: 16px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; corner-shape: var(--corner); padding: 18px 20px; }
     .flow-num { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--mint); color: var(--deep); font-weight: 800; display: grid; place-items: center; font-size: 0.95rem; }
     .flow-step h4 { font-size: 1.02rem; color: #fff; margin-bottom: 3px; }
     .flow-step p { font-size: 0.9rem; color: var(--text-dim); }
 
     /* Deploy / BYOG */
     .deploy { max-width: 760px; margin: 0 auto; }
-    .step { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; margin-bottom: 16px; }
+    .step { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; corner-shape: var(--corner); padding: 22px 24px; margin-bottom: 16px; }
     .step-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
     .step-badge { font-family: 'Comfortaa', cursive; font-weight: 700; font-size: 0.8rem; color: var(--deep); background: var(--mint); border-radius: 999px; padding: 3px 11px; white-space: nowrap; }
     .step-head h3 { font-family: 'Comfortaa', cursive; font-weight: 600; font-size: 1.1rem; color: #fff; }
     .step p { color: var(--text-dim); font-size: 0.92rem; margin-bottom: 12px; }
     .step ol { color: var(--text-dim); font-size: 0.92rem; margin: 0 0 4px 1.1rem; }
     .step ol li { margin-bottom: 5px; }
-    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; font-size: 0.84rem; color: var(--mint); line-height: 1.7; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; corner-shape: var(--corner); padding: 14px 16px; overflow-x: auto; font-family: 'SFMono-Regular', ui-monospace, Menlo, monospace; font-size: 0.84rem; color: var(--mint); line-height: 1.7; }
     pre .c { color: var(--text-faint); }
     .reqs { text-align: center; color: var(--text-faint); font-size: 0.86rem; margin-top: 24px; }
-    .callout { background: rgba(182, 240, 198, 0.08); border: 1px dashed var(--border); border-radius: 12px; padding: 14px 18px; font-size: 0.9rem; color: var(--text-dim); margin: 0 auto 24px; max-width: 760px; }
+    .callout { background: rgba(182, 240, 198, 0.08); border: 1px dashed var(--border); border-radius: 12px; corner-shape: var(--corner); padding: 14px 18px; font-size: 0.9rem; color: var(--text-dim); margin: 0 auto 24px; max-width: 760px; }
     .callout b { color: var(--mint); }
 
     /* Footer (CVER OSS common footer) */

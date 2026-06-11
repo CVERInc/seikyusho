@@ -26,6 +26,10 @@
       --error-bg: #fdecea;
       --radius: 10px;
       --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+      /* Continuous-curvature (squircle) corners. Progressive enhancement:
+         corner-shape is Chromium-only as of mid-2026; Safari/Firefox ignore it
+         and keep the border-radius arc, so there is zero visual regression. */
+      --corner: squircle;
     }
     * { box-sizing: border-box; }
     body {
@@ -43,7 +47,7 @@
     }
     .page-title { font-size: 28px; font-weight: 800; color: var(--green-primary); letter-spacing: 0.02em; margin: 0; line-height: 1.2; }
     .lang-switcher { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-    .lang-switcher select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: white; font-size: 13px; cursor: pointer; }
+    .lang-switcher select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; corner-shape: var(--corner); background: white; font-size: 13px; cursor: pointer; }
     @media (max-width: 540px) {
       .page-header { flex-direction: column; align-items: flex-start; }
       .page-title { font-size: 24px; }
@@ -52,14 +56,14 @@
 
     .intro { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
 
-    .card { background: white; border-radius: var(--radius); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .card { background: white; border-radius: var(--radius); corner-shape: var(--corner); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); }
     .card h2 { margin: 0 0 16px; font-size: 17px; font-weight: 700; color: var(--green-dark); padding-bottom: 10px; border-bottom: 1px solid var(--green-light); }
 
     .field { margin-bottom: 14px; }
     .field:last-child { margin-bottom: 0; }
     .field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
     input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, select {
-      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; corner-shape: var(--corner);
       font-size: 14px; font-family: inherit; background: white;
       transition: border-color 0.15s, box-shadow 0.15s; box-sizing: border-box;
     }
@@ -72,7 +76,7 @@
     .radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .radio-tile {
       display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-      border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer;
+      border: 1.5px solid var(--border); border-radius: 10px; corner-shape: var(--corner); cursor: pointer;
       transition: all 0.15s; background: white; font-weight: 600; font-size: 14px;
     }
     .radio-tile:hover { border-color: var(--green-primary); background: var(--green-bg); }
@@ -86,29 +90,29 @@
     .items-header { display: grid; grid-template-columns: 1fr 70px 110px 110px 40px; gap: 8px; padding: 0 6px 6px; font-size: 12px; font-weight: 700; color: var(--text-secondary); }
     .item-row { display: grid; grid-template-columns: 1fr 70px 110px 110px 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
     .item-row input { padding: 8px 10px; font-size: 13px; }
-    .item-row .item-subtotal { padding: 8px 10px; background: var(--green-light); border-radius: 8px; font-weight: 600; text-align: right; color: var(--green-dark); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .item-remove { background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
+    .item-row .item-subtotal { padding: 8px 10px; background: var(--green-light); border-radius: 8px; corner-shape: var(--corner); font-weight: 600; text-align: right; color: var(--green-dark); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-remove { background: transparent; border: 1px solid var(--border); color: var(--text-muted); width: 36px; height: 36px; border-radius: 8px; corner-shape: var(--corner); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.15s; }
     .item-remove:hover { border-color: var(--error); color: var(--error); background: var(--error-bg); }
     @media (max-width: 640px) {
       .items-header { display: none; }
-      .item-row { grid-template-columns: 1fr; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; }
+      .item-row { grid-template-columns: 1fr; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; corner-shape: var(--corner); margin-bottom: 10px; }
       .item-row .item-subtotal { background: transparent; padding: 0; text-align: left; }
       .item-row .item-remove { width: 100%; height: 36px; }
     }
 
-    .btn-add { width: 100%; padding: 12px; background: var(--green-light); color: var(--green-dark); border: 1px dashed var(--green-primary); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 4px; transition: all 0.15s; }
+    .btn-add { width: 100%; padding: 12px; background: var(--green-light); color: var(--green-dark); border: 1px dashed var(--green-primary); border-radius: 8px; corner-shape: var(--corner); cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 4px; transition: all 0.15s; }
     .btn-add:hover { background: var(--green-primary); color: white; }
 
-    .summary { margin-top: 20px; padding: 16px; background: var(--green-bg); border-radius: 10px; border: 1px solid var(--green-light); }
+    .summary { margin-top: 20px; padding: 16px; background: var(--green-bg); border-radius: 10px; corner-shape: var(--corner); border: 1px solid var(--green-light); }
     .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; color: var(--text-secondary); }
     .summary-row span:last-child { font-variant-numeric: tabular-nums; }
     .summary-total { border-top: 1px solid var(--green-primary); margin-top: 6px; padding-top: 12px; font-size: 17px; font-weight: 700; color: var(--green-dark); }
 
-    .btn-submit { width: 100%; padding: 16px; background: var(--green-primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
+    .btn-submit { width: 100%; padding: 16px; background: var(--green-primary); color: white; border: none; border-radius: 10px; corner-shape: var(--corner); font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; transition: all 0.15s; }
     .btn-submit:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31,142,61,0.3); }
     .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .error-box { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 14px; }
+    .error-box { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); padding: 12px 16px; border-radius: 8px; corner-shape: var(--corner); margin-top: 12px; font-size: 14px; }
 
     /* ============================================================
        Demo-only chrome: banner + withholding toggle + invoice preview
@@ -126,7 +130,7 @@
     .demo-toggle {
       display: flex; align-items: center; gap: 10px; margin-top: 12px;
       padding: 12px 14px; border: 1.5px dashed var(--green-primary);
-      border-radius: 10px; background: var(--green-bg); font-size: 13px; font-weight: 600;
+      border-radius: 10px; corner-shape: var(--corner); background: var(--green-bg); font-size: 13px; font-weight: 600;
       color: var(--green-dark); cursor: pointer;
     }
     .demo-toggle input { width: auto; accent-color: var(--green-primary); }
@@ -139,7 +143,7 @@
       margin: 0 auto 20px; max-width: 760px;
     }
     .invoice-actions button {
-      padding: 12px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--green-primary);
+      padding: 12px 22px; border-radius: 8px; corner-shape: var(--corner); font-size: 14px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--green-primary);
     }
     .btn-print { background: var(--green-primary); color: #fff; }
     .btn-print:hover { background: var(--green-dark); }
@@ -148,7 +152,7 @@
 
     .invoice {
       max-width: 760px; margin: 0 auto; background: #fff; color: #1c1c1c;
-      border: 1px solid var(--border); border-radius: 8px;
+      border: 1px solid var(--border); border-radius: 8px; corner-shape: var(--corner);
       box-shadow: var(--shadow); padding: 48px 52px; font-size: 14px;
     }
     .inv-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--green-primary); padding-bottom: 16px; margin-bottom: 24px; }
@@ -159,7 +163,7 @@
     .inv-party { font-size: 13px; }
     .inv-party .lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px; }
     .inv-party .big { font-size: 17px; font-weight: 700; }
-    .inv-total-band { background: var(--green-light); border-radius: 8px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .inv-total-band { background: var(--green-light); border-radius: 8px; corner-shape: var(--corner); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .inv-total-band .lbl { font-size: 14px; font-weight: 700; color: var(--green-dark); }
     .inv-total-band .amt { font-size: 26px; font-weight: 800; color: var(--green-dark); font-variant-numeric: tabular-nums; }
     table.inv-items { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
@@ -170,7 +174,7 @@
     .inv-summary .row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; color: var(--text-secondary); }
     .inv-summary .row.grand { border-top: 2px solid var(--green-primary); margin-top: 6px; padding-top: 10px; font-size: 17px; font-weight: 800; color: var(--green-dark); }
     .inv-summary .row span:last-child { font-variant-numeric: tabular-nums; }
-    .inv-bank { margin-top: 24px; padding: 14px 16px; background: var(--green-bg); border: 1px solid var(--green-light); border-radius: 8px; font-size: 13px; }
+    .inv-bank { margin-top: 24px; padding: 14px 16px; background: var(--green-bg); border: 1px solid var(--green-light); border-radius: 8px; corner-shape: var(--corner); font-size: 13px; }
     .inv-bank .lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
     .inv-notes { margin-top: 16px; font-size: 13px; color: var(--text-secondary); }
     .inv-footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); line-height: 1.7; }
