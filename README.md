@@ -6,7 +6,7 @@
 [![Apps Script](https://img.shields.io/badge/Built%20with-Google%20Apps%20Script-4285F4)](https://script.google.com/)
 [![i18n](https://img.shields.io/badge/i18n-ja--JP%20%2F%20en--US%20%2F%20zh--TW%20%2F%20es--ES-success)](#)
 
-🇯🇵 日本語の紹介とセットアップガイド → [cver.net/ja-jp/oss/seikyusho](https://cver.net/ja-jp/oss/seikyusho)（コピーしたシートには日本語の「使い方」ガイドが自動生成されます）・ 繁體中文介紹 → [cver.net/zh-tw/oss/seikyusho](https://cver.net/zh-tw/oss/seikyusho)
+🌐 [日本語](https://cver.net/ja-jp/oss/seikyusho) · [한국어](https://cver.net/ko-kr/oss/seikyusho) · [繁體中文](https://cver.net/zh-tw/oss/seikyusho)
 
 ---
 
