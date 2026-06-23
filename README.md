@@ -258,4 +258,4 @@ Issues and PRs welcome. See [**CONTRIBUTING.md**](./CONTRIBUTING.md) for the ful
 
 ---
 
-Built with ❤️ on Google Apps Script
+Published by **CVER Inc.** · [cver.net](https://cver.net) · MIT License.
